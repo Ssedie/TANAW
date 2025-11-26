@@ -1,4 +1,7 @@
+import { useAuth } from "../context/AuthProvider";
 const Header = ({ onSidebarToggle, isSidebarOpen}) => {
+    const {logout} = useAuth();
+
   return (
     <header className="bg-white shadow-sm">
       <div className="flex justify-between items-center px-6 py-4">
@@ -54,6 +57,9 @@ const Header = ({ onSidebarToggle, isSidebarOpen}) => {
           </button>
           <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-bold text-white">
             RJ
+          </div>
+          <div>
+            <button onClick={logout}></button>
           </div>
         </div>
       </div>

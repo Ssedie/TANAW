@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useAuth } from '../authorization/AuthContext';
 
 function Header({ onSidebarToggle }) {
     const [searchFocused, setSearchFocused] = useState(false);
     const [notificationBounce, setNotificationBounce] = useState(false);
+    const {logout} = useAuth();
 
     const handleNotificationClick = () => {
         setNotificationBounce(true);
@@ -88,6 +90,10 @@ function Header({ onSidebarToggle }) {
                             KR
                         </div>
                         <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+
+                        <div>
+                            <button onClick={logout}>Logout</button>
+                        </div>
                     </button>
                 </div>
             </div>

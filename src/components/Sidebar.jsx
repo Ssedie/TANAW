@@ -13,7 +13,7 @@ function Sidebar({isVisible}) {
     return (
         <div className={`top-0 left-0 h-full bg-gray-900 text-white transition-all duration-300 ease-in-out ${isVisible ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'} overflow-hidden`}>
             <div className="p-4">
-                <h2 className="text-xl font-bold mb-6">TANAW</h2>
+                <h2 className="text-xl font-bold mb-6 text-center">TANAW</h2>
                 <nav className="flex flex-col gap-2">
                     {menuItems.map((item, index) => (
                         <Link 

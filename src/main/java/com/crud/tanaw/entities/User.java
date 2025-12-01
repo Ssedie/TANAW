@@ -61,6 +61,9 @@ public class User {
     private Date dateCreated;
 
     @OneToMany(mappedBy = "uploader")
+    private List<Document> documents = new ArrayList<>();
+
+    @OneToMany(mappedBy = "uploader")
     private List<Budget> budgets = new ArrayList<>();
 
 

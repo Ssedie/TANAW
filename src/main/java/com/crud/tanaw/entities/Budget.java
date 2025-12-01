@@ -18,7 +18,10 @@ public class Budget {
     private Long totalExpenses;
     private String description;
     private Date uploadDate;
-    private Integer document;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "documentId")
+    private Document document;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userId")
@@ -72,12 +75,19 @@ public class Budget {
         this.uploadDate = uploadDate;
     }
 
-    public Integer getDocument() {
+    public Document getDocument() {
         return document;
     }
 
-    public void setDocument(Integer document) {
+    public void setDocument(Document document) {
         this.document = document;
     }
 
+    public User getUploader() {
+        return uploader;
+    }
+
+    public void setUploader(User uploader) {
+        this.uploader = uploader;
+    }
 }

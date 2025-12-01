@@ -1,6 +1,7 @@
 package com.crud.tanaw.dto;
 
 import com.crud.tanaw.entities.User;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
@@ -10,11 +11,11 @@ public class UserDTO {
 
 
     @NotNull
-    private String fName;
+    private String f_name;
     @NotNull
-    private String mName;
+    private String m_name;
     @NotNull
-    private String lName;
+    private String l_name;
 
     @NotNull
     private String street;
@@ -25,8 +26,8 @@ public class UserDTO {
     @NotNull
     private String country;
     @NotNull
-    @Min(4)
-    private int zipCode;
+    @Max(4)
+    private int zip_code;
 
     @NotNull
     private String email;
@@ -36,36 +37,36 @@ public class UserDTO {
     @NotNull
     private String role;
     @NotNull
-    private String phoneNumber;
+    private String phone_number;
     @NotNull
-    private Date birthDate;
+    private Date birth_date;
     @NotNull
-    private String accountStatus;
+    private String account_status;
     @NotNull
-    private Date dateCreated;
+    private Date date_created;
 
     public String getfName() {
-        return fName;
+        return f_name;
     }
 
-    public void setfName(String fName) {
-        this.fName = fName;
+    public void setfName(String f_name) {
+        this.f_name = f_name;
     }
 
     public String getmName() {
-        return mName;
+        return m_name;
     }
 
-    public void setmName(String mName) {
-        this.mName = mName;
+    public void setmName(String m_name) {
+        this.m_name = m_name;
     }
 
     public String getlName() {
-        return lName;
+        return l_name;
     }
 
-    public void setName(String lName) {
-        this.lName = lName;
+    public void setlName(String l_name) {
+        this.l_name = l_name;
     }
 
     public String getStreet() {
@@ -125,34 +126,42 @@ public class UserDTO {
     }
 
     public String getPhoneNumber() {
-        return phoneNumber;
+        return phone_number;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    public void setPhoneNumber(String phone_number) {
+        this.phone_number = phone_number;
     }
 
     public Date getBirthDate() {
-        return birthDate;
+        return birth_date;
     }
 
-    public void setBirthDate(Date birthDate) {
-        this.birthDate = birthDate;
+    public void setBirthDate(Date birth_date) {
+        this.birth_date = birth_date;
     }
 
     public String getAccountStatus() {
-        return accountStatus;
+        return account_status;
     }
 
-    public void setAccountStatus(String accountStatus) {
-        this.accountStatus = accountStatus;
+    public void setAccountStatus(String account_status) {
+        this.account_status = account_status;
     }
 
     public Date getDateCreated() {
-        return dateCreated;
+        return date_created;
     }
 
-    public void setDateCreated(Date dateCreated) {
-        this.dateCreated = dateCreated;
+    public void setDateCreated(Date date_created) {
+        this.date_created = date_created;
+    }
+
+    public int getZip_code() {
+        return zip_code;
+    }
+
+    public void setZip_code(int zip_code) {
+        this.zip_code = zip_code;
     }
 }

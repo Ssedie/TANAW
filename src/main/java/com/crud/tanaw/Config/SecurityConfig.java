@@ -1,6 +1,6 @@
 package com.crud.tanaw.Config;
 
-import com.crud.tanaw.Services.CustomUserDetailsService;
+import com.crud.tanaw.Service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -39,10 +39,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setPasswordEncoder(passwordEncoder);
-        authProvider.setUserDetailsService(customUserDetailsService);
+    public AuthenticationManager authenticationManager() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(customUserDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
 
         return new ProviderManager(authProvider);
     }

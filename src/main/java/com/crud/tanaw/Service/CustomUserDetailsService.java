@@ -1,4 +1,4 @@
-package com.crud.tanaw.Services;
+package com.crud.tanaw.Service;
 
 import com.crud.tanaw.Repositories.UserRepository;
 import com.crud.tanaw.entities.User;
@@ -10,8 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 
 @Service
-public class CustomUserDetailsService implements UserDetailsService {
-
+public class CustomUserDetailsService  implements UserDetailsService {
     private final UserRepository userRepository;
 
     public CustomUserDetailsService(UserRepository userRepository) {

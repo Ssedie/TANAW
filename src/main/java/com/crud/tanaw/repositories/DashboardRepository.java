@@ -28,12 +28,13 @@ public interface DashboardRepository extends JpaRepository<Project, Integer> {
 
     @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.BudgetSummaryDTO(" +
             "d.documentTitle, " +
-            "COALESCE(SUM(b.approvedBudget), 0.0), " +
-            "COALESCE(SUM(b.totalExpenses), 0.0)) " +
+            "COALESCE(CAST(SUM(b.approvedBudget) AS double), 0.0), " +
+            "COALESCE(CAST(SUM(b.totalExpenses) AS double), 0.0)) " +
             "FROM Budget b " +
             "JOIN b.document d " +
             "GROUP BY d.documentTitle")
     List<BudgetSummaryDTO> budgetSummary();
+
 
 
 }

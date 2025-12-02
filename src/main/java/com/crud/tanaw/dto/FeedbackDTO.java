@@ -6,7 +6,7 @@ import java.util.Date;
 
 public class FeedbackDTO {
 
-
     @NotBlank(message = "Feedback is needed")
     private String content;
+
 }

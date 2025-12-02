@@ -1,60 +1,59 @@
 package com.crud.tanaw.services;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.stream.Collectors;
 
 @Service
 public class JwtTokenService {
 
-    private final JwtEncoder encoder;
-    private final JwtDecoder decoder;
+    private final JwtEncoder jwtEncoder;
+    private final JwtDecoder jwtDecoder;
 
-    public JwtTokenService(JwtEncoder encoder, JwtDecoder decoder) {
-        this.encoder = encoder;
-        this.decoder = decoder;
+    public JwtTokenService(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder) {
+        this.jwtEncoder = jwtEncoder;
+        this.jwtDecoder = jwtDecoder;
     }
 
     public String generateToken(Authentication authentication) {
         Instant now = Instant.now();
-        String scope = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(" "));
+        long expiresIn = 24 * 60 * 60;
+
+        String userId = authentication.getName();
+
+        // Safely get role
+        String role = authentication.getAuthorities().stream()
+                .findFirst()
+                .map(a -> a.getAuthority())
+                .orElse("CITIZEN"); // default role if none assigned
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("tanaw-app")
+                .subject(userId)
+                .issuer("self")
                 .issuedAt(now)
-                .expiresAt(now.plus(1, ChronoUnit.DAYS))
-                .subject(authentication.getName())  // userId as string
-                .claim("scope", scope)
+                .expiresAt(now.plusSeconds(expiresIn))
+                .claim("role", role)
                 .build();
 
-        JwtEncoderParameters params = JwtEncoderParameters.from(
-                JwsHeader.with(MacAlgorithm.HS256).build(),
-                claims
-        );
+        // Add HS256 header
+        var header = org.springframework.security.oauth2.jwt.JwsHeader
+                .with(MacAlgorithm.HS256)
+                .build();
 
-        return encoder.encode(params).getTokenValue();
+        return jwtEncoder.encode(JwtEncoderParameters.from(header, claims))
+                .getTokenValue();
     }
+
 
     public Long extractExpirationTime(String token) {
-        try {
-            Jwt jwt = decoder.decode(token);
-            Instant exp = jwt.getExpiresAt();
-            return exp != null ? exp.toEpochMilli() : null;
-        } catch (JwtException e) {
-            return null;
-        }
-    }
-
-    public String extractUsername(String token) {
-        Jwt jwt = decoder.decode(token);
-        return jwt.getSubject();
+        Jwt jwt = jwtDecoder.decode(token);
+        return jwt.getExpiresAt().getEpochSecond();
     }
 }

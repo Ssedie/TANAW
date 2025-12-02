@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://127.0.0.1:5173")
 public class ApiAuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -42,15 +41,27 @@ public class ApiAuthController {
 
         User user = userService.findByUserId(Long.valueOf(request.user_id()));
 
-        return new AuthResponse(token, Math.toIntExact(user.getUserId()), expiresAt);
+        return new AuthResponse(token, Math.toIntExact(user.getUserId()), expiresAt, user.getRole());
     }
 
     @PostMapping("/register")
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
-        // Save user in a single transaction
-        User savedUser = userService.registerUser(request.email(), request.password());
 
-        // Authenticate using the newly created user
+        // Always default to CITIZEN on self signup
+        String assignedRole = "CITIZEN";
+
+        // Prevent user self-registering as admin
+        if (request.role() != null && request.role().equalsIgnoreCase("ADMIN")) {
+            throw new RuntimeException("Admin accounts cannot be created from public signup.");
+        }
+
+        User savedUser = userService.registerUser(
+                request.email(),
+                request.password(),
+                assignedRole
+        );
+
+        // Authenticate new user
         var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         String.valueOf(savedUser.getUserId()),
@@ -61,6 +72,12 @@ public class ApiAuthController {
         String token = jwtTokenService.generateToken(authentication);
         Long expiresAt = jwtTokenService.extractExpirationTime(token);
 
-        return new AuthResponse(token, Math.toIntExact(savedUser.getUserId()), expiresAt);
+        return new AuthResponse(
+                token,
+                Math.toIntExact(savedUser.getUserId()),
+                expiresAt,
+                savedUser.getRole()
+        );
     }
+
 }

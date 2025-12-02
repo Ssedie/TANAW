@@ -3,6 +3,7 @@ package com.crud.tanaw.dto;
 import com.crud.tanaw.entities.User;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Date;
@@ -10,40 +11,36 @@ import java.util.Date;
 public class UserDTO {
 
 
-    @NotNull
+    @NotBlank(message = "Please input your name")
     private String f_name;
-    @NotNull
+    @NotBlank(message = "Please input your middle name")
     private String m_name;
-    @NotNull
+    @NotBlank(message = "Please input your last name")
     private String l_name;
 
-    @NotNull
+    @NotBlank(message = "Please input the street that you live in")
     private String street;
-    @NotNull
+    @NotBlank(message = "Please input the city/municipality that you live in")
     private String city;
-    @NotNull
+    @NotBlank(message = "Please input the region that you live in")
     private String region;
-    @NotNull
+    @NotBlank(message = "Please input the country that you live in")
     private String country;
-    @NotNull
+    @NotBlank(message = "Please input the zip code of where you live")
     @Max(4)
     private int zip_code;
 
-    @NotNull
+    @NotBlank(message = "Please provide an email.")
     private String email;
-    @NotNull
+    @NotBlank(message = "Please provide a suitable password")
     private String password;
 
-    @NotNull
+    @NotBlank(message = "Please choose your role")
     private String role;
-    @NotNull
+    @NotBlank(message = "Please put your phone number")
     private String phone_number;
-    @NotNull
+    @NotBlank(message = "Please input the day the day that you were born")
     private Date birth_date;
-    @NotNull
-    private String account_status;
-    @NotNull
-    private Date date_created;
 
     public String getfName() {
         return f_name;
@@ -139,22 +136,6 @@ public class UserDTO {
 
     public void setBirthDate(Date birth_date) {
         this.birth_date = birth_date;
-    }
-
-    public String getAccountStatus() {
-        return account_status;
-    }
-
-    public void setAccountStatus(String account_status) {
-        this.account_status = account_status;
-    }
-
-    public Date getDateCreated() {
-        return date_created;
-    }
-
-    public void setDateCreated(Date date_created) {
-        this.date_created = date_created;
     }
 
     public int getZip_code() {

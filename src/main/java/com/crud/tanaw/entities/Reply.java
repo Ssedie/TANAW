@@ -1,5 +1,7 @@
 package com.crud.tanaw.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,8 +20,10 @@ public class Reply {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_id")
+    @JsonBackReference
     private User user;
     @OneToMany(mappedBy = "reply")
+    @JsonManagedReference
     private List<Feedback> feedbacks = new ArrayList<>();
 
     public Integer getReplyId() { return replyId; }

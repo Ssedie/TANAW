@@ -1,5 +1,6 @@
 package com.crud.tanaw.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.util.Date;
 
@@ -12,8 +13,8 @@ public class Budget {
     private Integer budgetId;
 
     private String fiscalYear;
-    private Long approvedBudget;
-    private Long totalExpenses;
+    private Double approvedBudget;
+    private Double totalExpenses;
     private String description;
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -21,10 +22,12 @@ public class Budget {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_id")
+    @JsonBackReference
     private Document document;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
+    @JsonBackReference
     private User uploader;
 
     // --- Getters & Setters ---

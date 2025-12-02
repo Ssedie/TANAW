@@ -1,5 +1,7 @@
 package com.crud.tanaw.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -41,18 +43,23 @@ public class User {
     private Date dateCreated;
 
     @OneToMany(mappedBy = "uploader")
+    @JsonManagedReference
     private List<Document> documents = new ArrayList<>();
 
     @OneToMany(mappedBy = "uploader")
+    @JsonManagedReference
     private List<Budget> budgets = new ArrayList<>();
 
     @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private List<Reply> replies = new ArrayList<>();
 
     @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private List<Project> projects = new ArrayList<>();
 
     @OneToMany(mappedBy = "projectHead")
+    @JsonManagedReference
     private List<Activity> activities = new ArrayList<>();
 
     public User() {}

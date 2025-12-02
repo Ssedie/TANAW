@@ -103,8 +103,8 @@ public class UserService {
         if (request.mName() != null) user.setMName(request.mName());
         if (request.lName() != null) user.setLName(request.lName());
         if (request.street() != null) user.setStreet(request.street());
-        if (request.city() != null) user.setCity(request.city());
         if (request.barangay() != null) user.setBarangay(request.barangay());
+        if (request.city() != null) user.setCity(request.city());
         if (request.province() != null) user.setCountry(request.province());
         if (request.region() != null) user.setRegion(request.region());
         if (request.country() != null) user.setCountry(request.country());

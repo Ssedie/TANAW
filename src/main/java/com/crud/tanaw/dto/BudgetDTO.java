@@ -9,9 +9,9 @@ public class BudgetDTO {
     private String fiscalYear;
 
     @NotBlank(message="Please provide the approved budget.")
-    private Long approvedBudget;
+    private Double approvedBudget;
     @NotBlank(message="Please provide the total expenses for the project.")
-    private Long totalExpenses;
+    private Double totalExpenses;
     @NotBlank(message="Please give a brief description of the use of the budget.")
     private String description;
 

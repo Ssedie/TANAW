@@ -37,11 +37,11 @@ public class Budget {
     public String getFiscalYear() { return fiscalYear; }
     public void setFiscalYear(String fiscalYear) { this.fiscalYear = fiscalYear; }
 
-    public Long getApprovedBudget() { return approvedBudget; }
-    public void setApprovedBudget(Long approvedBudget) { this.approvedBudget = approvedBudget; }
+    public Double getApprovedBudget() { return approvedBudget; }
+    public void setApprovedBudget(Double approvedBudget) { this.approvedBudget = approvedBudget; }
 
-    public Long getTotalExpenses() { return totalExpenses; }
-    public void setTotalExpenses(Long totalExpenses) { this.totalExpenses = totalExpenses; }
+    public Double getTotalExpenses() { return totalExpenses; }
+    public void setTotalExpenses(Double totalExpenses) { this.totalExpenses = totalExpenses; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

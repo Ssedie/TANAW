@@ -26,13 +26,16 @@ public interface DashboardRepository extends JpaRepository<Project, Integer> {
     @Query("SELECT f FROM Feedback f LEFT JOIN FETCH f.reply WHERE f.project.projectId = :projectId")
     List<com.crud.tanaw.entities.Feedback> findFeedbacksWithRepliesByProject(Integer projectId);
 
-    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.BudgetSummaryDTO(" +
-            "d.documentTitle, " +
-            "COALESCE(SUM(b.approvedBudget), 0.0), " +
-            "COALESCE(SUM(b.totalExpenses), 0.0)) " +
-            "FROM Budget b " +
-            "JOIN b.document d " +
-            "GROUP BY d.documentTitle")
+    @Query("""
+       SELECT new com.crud.tanaw.dto.dashboardDTO.BudgetSummaryDTO(
+           d.documentTitle,
+           COALESCE(CAST(SUM(b.approvedBudget)AS double), 0.0),
+           COALESCE(CAST(SUM(b.totalExpenses)AS double), 0.0)
+       )
+       FROM Budget b
+       JOIN b.document d
+       GROUP BY d
+       """)
     List<BudgetSummaryDTO> budgetSummary();
 
 

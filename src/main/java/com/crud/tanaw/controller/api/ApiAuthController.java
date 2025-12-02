@@ -58,7 +58,20 @@ public class ApiAuthController {
         User savedUser = userService.registerUser(
                 request.email(),
                 request.password(),
-                assignedRole
+                assignedRole,
+
+                request.fName(),
+                request.mName(),
+                request.lName(),
+                request.phoneNumber(),
+                request.birthDate(),
+                request.street(),
+                request.barangay(),
+                request.city(),
+                request.province(),
+                request.region(),
+                request.country(),
+                request.zipCode()
         );
 
         // Authenticate new user

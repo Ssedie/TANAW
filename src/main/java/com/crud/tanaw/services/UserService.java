@@ -7,6 +7,8 @@ import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 @Service
@@ -22,14 +24,61 @@ public class UserService {
     }
 
     @Transactional
-    public User registerUser(String email, String password, String role) {
+    public User registerUser(
+            String email,
+            String password,
+            String role,
+            String fName,
+            String mName,
+            String lName,
+            String phoneNumber,
+            String birthDate,
+            String street,
+            String barangay,
+            String city,
+            String province,
+            String region,
+            String country,
+            Integer zipCode
+    ) {
         User user = new User();
+
+        // --- Generate 6-digit ID ---
+        int generatedId = (int) (Math.random() * 900000) + 100000;
+        user.setUserId(generatedId);
+
+        // --- Main fields ---
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
-        user.setUserId(generateUniqueUserId());
-        user.setRole(role);// <-- generate 6-digit ID
+        user.setRole(role);
 
-        // set other default values if needed
+        // --- Profile fields ---
+        user.setFName(fName);
+        user.setMName(mName);
+        user.setLName(lName);
+        user.setPhoneNumber(phoneNumber);
+
+        // convert birthDate string → Date
+        try {
+            if (birthDate != null && !birthDate.isEmpty()) {
+                user.setBirthDate(new SimpleDateFormat("yyyy-MM-dd").parse(birthDate));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid birth date format (expected yyyy-MM-dd)");
+        }
+
+        user.setStreet(street);
+        user.setBarangay(barangay);
+        user.setCity(city);
+        user.setProvince(province);
+        user.setRegion(region);
+        user.setCountry(country);
+        user.setZipCode(zipCode != null ? zipCode : 0);
+
+        // --- System fields ---
+        user.setAccountStatus("ACTIVE");
+        user.setDateCreated(new Date());
+
         return userRepository.save(user);
     }
 
@@ -55,6 +104,8 @@ public class UserService {
         if (request.lName() != null) user.setLName(request.lName());
         if (request.street() != null) user.setStreet(request.street());
         if (request.city() != null) user.setCity(request.city());
+        if (request.barangay() != null) user.setBarangay(request.barangay());
+        if (request.province() != null) user.setCountry(request.province());
         if (request.region() != null) user.setRegion(request.region());
         if (request.country() != null) user.setCountry(request.country());
         if (request.zipCode() != null) user.setZipCode(request.zipCode());

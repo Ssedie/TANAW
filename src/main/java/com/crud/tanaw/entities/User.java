@@ -22,8 +22,10 @@ public class User {
     private String lName;
 
     private String street;
+    private String barangay;
     private String city;
     private String region;
+    private String province;
     private String country;
     private int zipCode;
 
@@ -128,4 +130,20 @@ public class User {
 
     public List<Activity> getActivities() { return activities; }
     public void setActivities(List<Activity> activities) { this.activities = activities; }
+
+    public String getBarangay() {
+        return barangay;
+    }
+
+    public void setBarangay(String barangay) {
+        this.barangay = barangay;
+    }
+
+    public String getProvince() {
+        return province;
+    }
+
+    public void setProvince(String province) {
+        this.province = province;
+    }
 }

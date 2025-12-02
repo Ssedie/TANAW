@@ -1,7 +1,6 @@
 package com.crud.tanaw.entities;
 
 import jakarta.persistence.*;
-
 import java.util.Date;
 
 @Entity
@@ -10,36 +9,38 @@ public class Activity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer activity_id;
+    private Integer activityId;
 
-    private String activity_name;
+    private String activityName;
     private String description;
     private Date date;
     private String status;
     private String expenses;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="project_id")
+    @JoinColumn(name = "project_id")
     private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="user_id")
-    private User project_head;
+    @JoinColumn(name = "user_id")
+    private User projectHead; // must match User.activities mappedBy
 
-    public Integer getActivity_id() {
-        return activity_id;
+    // Getters and Setters
+
+    public Integer getActivityId() {
+        return activityId;
     }
 
-    public void setActivity_id(Integer activity_id) {
-        this.activity_id = activity_id;
+    public void setActivityId(Integer activityId) {
+        this.activityId = activityId;
     }
 
-    public String getActivity_name() {
-        return activity_name;
+    public String getActivityName() {
+        return activityName;
     }
 
-    public void setActivity_name(String activity_name) {
-        this.activity_name = activity_name;
+    public void setActivityName(String activityName) {
+        this.activityName = activityName;
     }
 
     public String getDescription() {
@@ -82,11 +83,11 @@ public class Activity {
         this.project = project;
     }
 
-    public User getProject_head() {
-        return project_head;
+    public User getProjectHead() {
+        return projectHead;
     }
 
-    public void setProject_head(User project_head) {
-        this.project_head = project_head;
+    public void setProjectHead(User projectHead) {
+        this.projectHead = projectHead;
     }
 }

@@ -11,10 +11,10 @@ public class Reply {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer reply_id;
+    private Integer replyId;
 
     private String content;
-    private Date reply_date;
+    private Date replyDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_id")
@@ -22,43 +22,18 @@ public class Reply {
     @OneToMany(mappedBy = "reply")
     private List<Feedback> feedbacks = new ArrayList<>();
 
-    public Integer getReply_id() {
-        return reply_id;
-    }
+    public Integer getReplyId() { return replyId; }
+    public void setReplyId(Integer replyId) { this.replyId = replyId; }
 
-    public void setReply_id(Integer reply_id) {
-        this.reply_id = reply_id;
-    }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
 
-    public String getContent() {
-        return content;
-    }
+    public Date getReplyDate() { return replyDate; }
+    public void setReplyDate(Date replyDate) { this.replyDate = replyDate; }
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
-    public Date getReply_date() {
-        return reply_date;
-    }
-
-    public void setReply_date(Date reply_date) {
-        this.reply_date = reply_date;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public List<Feedback> getFeedbacks() {
-        return feedbacks;
-    }
-
-    public void setFeedbacks(List<Feedback> feedbacks) {
-        this.feedbacks = feedbacks;
-    }
+    public List<Feedback> getFeedbacks() { return feedbacks; }
+    public void setFeedbacks(List<Feedback> feedbacks) { this.feedbacks = feedbacks; }
 }

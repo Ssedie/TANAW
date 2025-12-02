@@ -1,7 +1,6 @@
 package com.crud.tanaw.entities;
 
 import jakarta.persistence.*;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -12,19 +11,25 @@ public class Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer project_id;
+    private Integer projectId;
 
-    private String project_name;
+    private String projectName;
     private String description;
-    private Date start_date;
-    private Date end_date;
-    private String allocated_budget;
-    private String project_status;
+
+    @Temporal(TemporalType.DATE)
+    private Date startDate;
+
+    @Temporal(TemporalType.DATE)
+    private Date endDate;
+
+    private String allocatedBudget;
+    private String projectStatus;
     private String feedback;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name= "document_id")
     private Document document;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_id")
     private User user;
@@ -32,91 +37,37 @@ public class Project {
     @OneToMany(mappedBy = "project")
     private List<Feedback> feedbacks = new ArrayList<>();
 
-    public Integer getProject_id() {
-        return project_id;
-    }
+    // --- Getters & Setters ---
+    public Integer getProjectId() { return projectId; }
+    public void setProjectId(Integer projectId) { this.projectId = projectId; }
 
-    public void setProject_id(Integer project_id) {
-        this.project_id = project_id;
-    }
+    public String getProjectName() { return projectName; }
+    public void setProjectName(String projectName) { this.projectName = projectName; }
 
-    public String getProject_name() {
-        return project_name;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setProject_name(String project_name) {
-        this.project_name = project_name;
-    }
+    public Date getStartDate() { return startDate; }
+    public void setStartDate(Date startDate) { this.startDate = startDate; }
 
-    public String getDescription() {
-        return description;
-    }
+    public Date getEndDate() { return endDate; }
+    public void setEndDate(Date endDate) { this.endDate = endDate; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public String getAllocatedBudget() { return allocatedBudget; }
+    public void setAllocatedBudget(String allocatedBudget) { this.allocatedBudget = allocatedBudget; }
 
-    public Date getStart_date() {
-        return start_date;
-    }
+    public String getProjectStatus() { return projectStatus; }
+    public void setProjectStatus(String projectStatus) { this.projectStatus = projectStatus; }
 
-    public void setStart_date(Date start_date) {
-        this.start_date = start_date;
-    }
+    public String getFeedback() { return feedback; }
+    public void setFeedback(String feedback) { this.feedback = feedback; }
 
-    public Date getEnd_date() {
-        return end_date;
-    }
+    public Document getDocument() { return document; }
+    public void setDocument(Document document) { this.document = document; }
 
-    public void setEnd_date(Date end_date) {
-        this.end_date = end_date;
-    }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
-    public String getAllocated_budget() {
-        return allocated_budget;
-    }
-
-    public void setAllocated_budget(String allocated_budget) {
-        this.allocated_budget = allocated_budget;
-    }
-
-    public String getProject_status() {
-        return project_status;
-    }
-
-    public void setProject_status(String project_status) {
-        this.project_status = project_status;
-    }
-
-    public String getFeedback() {
-        return feedback;
-    }
-
-    public void setFeedback(String feedback) {
-        this.feedback = feedback;
-    }
-
-    public Document getDocument() {
-        return document;
-    }
-
-    public void setDocument(Document document) {
-        this.document = document;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public List<Feedback> getFeedbacks() {
-        return feedbacks;
-    }
-
-    public void setFeedbacks(List<Feedback> feedbacks) {
-        this.feedbacks = feedbacks;
-    }
+    public List<Feedback> getFeedbacks() { return feedbacks; }
+    public void setFeedbacks(List<Feedback> feedbacks) { this.feedbacks = feedbacks; }
 }

@@ -1,7 +1,6 @@
 package com.crud.tanaw.entities;
 
 import jakarta.persistence.*;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -9,55 +8,37 @@ import java.util.List;
 @Entity
 @Table(
         name = "users",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = "email")
-        })
+        uniqueConstraints = {@UniqueConstraint(columnNames = "email")}
+)
 public class User {
 
-    public User(){
-
-    }
-
-    public User(Integer user_id, String f_name,String m_name, String l_name, String street, String city, String region, String country, int zip_code, String email, String password, String role, String phone_number, Date birth_date, String account_status, Date date_created){
-        this.user_id = user_id;
-        this.f_name = f_name;
-        this.m_name = m_name;
-        this.l_name = l_name;
-        this.street = street;
-        this.city = city;
-        this.region = region;
-        this.country = country;
-        this.zip_code = zip_code;
-        this.email = email;
-        this.password = password;
-        this.role = role;
-        this.phone_number = phone_number;
-        this.birth_date = birth_date;
-        this.account_status = account_status;
-        this.date_created = date_created;
-    }
-
     @Id
-    private Integer user_id;
+    private Integer userId;
 
-    private String f_name;
-    private String m_name;
-    private String l_name;
+    private String fName;
+    private String mName;
+    private String lName;
 
     private String street;
     private String city;
     private String region;
     private String country;
-    private int zip_code;
-    @Column (unique = true)
+    private int zipCode;
+
+    @Column(unique = true)
     private String email;
 
     private String password;
     private String role;
-    private String phone_number;
-    private Date birth_date;
-    private String account_status;
-    private Date date_created;
+    private String phoneNumber;
+
+    @Temporal(TemporalType.DATE)
+    private Date birthDate;
+
+    private String accountStatus;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date dateCreated;
 
     @OneToMany(mappedBy = "uploader")
     private List<Document> documents = new ArrayList<>();
@@ -71,176 +52,73 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Project> projects = new ArrayList<>();
 
-    @OneToMany(mappedBy = "project_head")
+    @OneToMany(mappedBy = "projectHead")
     private List<Activity> activities = new ArrayList<>();
 
+    public User() {}
 
+    // Constructors, getters, setters
 
-    public String getfName() {
-        return f_name;
-    }
+    public Integer getUserId() { return userId; }
+    public void setUserId(Integer userId) { this.userId = userId; }
 
-    public void setfName(String f_name) {
-        this.f_name = f_name;
-    }
+    public String getFName() { return fName; }
+    public void setFName(String fName) { this.fName = fName; }
 
-    public String getmName() {
-        return m_name;
-    }
+    public String getMName() { return mName; }
+    public void setMName(String mName) { this.mName = mName; }
 
-    public void setmName(String m_name) {
-        this.m_name = m_name;
-    }
+    public String getLName() { return lName; }
+    public void setLName(String lName) { this.lName = lName; }
 
-    public String getlName() {
-        return l_name;
-    }
+    public String getStreet() { return street; }
+    public void setStreet(String street) { this.street = street; }
 
-    public void setlName(String l_name) {
-        this.l_name = l_name;
-    }
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 
-    public String getStreet() {
-        return street;
-    }
+    public String getRegion() { return region; }
+    public void setRegion(String region) { this.region = region; }
 
-    public void setStreet(String street) {
-        this.street = street;
-    }
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
 
-    public String getCity() {
-        return city;
-    }
+    public int getZipCode() { return zipCode; }
+    public void setZipCode(int zipCode) { this.zipCode = zipCode; }
 
-    public void setCity(String city) {
-        this.city = city;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public String getRegion() {
-        return region;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    public void setRegion(String region) {
-        this.region = region;
-    }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
-    public String getCountry() {
-        return country;
-    }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    public void setCountry(String country) {
-        this.country = country;
-    }
+    public Date getBirthDate() { return birthDate; }
+    public void setBirthDate(Date birthDate) { this.birthDate = birthDate; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getAccountStatus() { return accountStatus; }
+    public void setAccountStatus(String accountStatus) { this.accountStatus = accountStatus; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public Date getDateCreated() { return dateCreated; }
+    public void setDateCreated(Date dateCreated) { this.dateCreated = dateCreated; }
 
-    public String getPassword() {
-        return password;
-    }
+    public List<Document> getDocuments() { return documents; }
+    public void setDocuments(List<Document> documents) { this.documents = documents; }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    public List<Budget> getBudgets() { return budgets; }
+    public void setBudgets(List<Budget> budgets) { this.budgets = budgets; }
 
-    public String getRole() {
-        return role;
-    }
+    public List<Reply> getReplies() { return replies; }
+    public void setReplies(List<Reply> replies) { this.replies = replies; }
 
-    public void setRole(String role) {
-        this.role = role;
-    }
+    public List<Project> getProjects() { return projects; }
+    public void setProjects(List<Project> projects) { this.projects = projects; }
 
-    public String getPhoneNumber() {
-        return phone_number;
-    }
-
-    public void setPhoneNumber(String phone_number) {
-        this.phone_number = phone_number;
-    }
-
-    public Date getBirthDate() {
-        return birth_date;
-    }
-
-    public void setBirthDate(Date birth_date) {
-        this.birth_date = birth_date;
-    }
-
-    public String getAccountStatus() {
-        return account_status;
-    }
-
-    public void setAccountStatus(String account_status) {
-        this.account_status = account_status;
-    }
-
-    public Date getDateCreated() {
-        return date_created;
-    }
-
-    public void setDateCreated(Date date_created) {
-        this.date_created = date_created;
-    }
-
-    public int getZipCode() {
-        return zip_code;
-    }
-
-    public void setZipCode(int zip_code) {
-        this.zip_code = zip_code;
-    }
-
-    public Integer getUserId() {
-        return user_id;
-    }
-
-    public void setUserId(Integer user_id) {
-        this.user_id = user_id;
-    }
-
-    public List<Document> getDocuments() {
-        return documents;
-    }
-
-    public void setDocuments(List<Document> documents) {
-        this.documents = documents;
-    }
-
-    public List<Budget> getBudgets() {
-        return budgets;
-    }
-
-    public void setBudgets(List<Budget> budgets) {
-        this.budgets = budgets;
-    }
-
-    public List<Reply> getReplies() {
-        return replies;
-    }
-
-    public void setReplies(List<Reply> replies) {
-        this.replies = replies;
-    }
-
-    public List<Project> getProjects() {
-        return projects;
-    }
-
-    public void setProjects(List<Project> projects) {
-        this.projects = projects;
-    }
-
-    public List<Activity> getActivities() {
-        return activities;
-    }
-
-    public void setActivities(List<Activity> activities) {
-        this.activities = activities;
-    }
+    public List<Activity> getActivities() { return activities; }
+    public void setActivities(List<Activity> activities) { this.activities = activities; }
 }

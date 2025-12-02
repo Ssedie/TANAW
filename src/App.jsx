@@ -12,6 +12,7 @@ import Budget from "./pages/Budget";
 import Projects from "./pages/Projects";
 import Documents from "./pages/Documents";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
 const App = () => {
   const [sidebarToggle, setSidebarToggle] = useState(true);
@@ -24,6 +25,7 @@ const App = () => {
     <Routes>
       {/* Public Route */}
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup/>}/>
 
       {/* Protected Routes */}
       <Route

@@ -18,14 +18,12 @@ function Login() {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/login`, { // <- call backend login
+            const response = await fetch(`${API_URL}/api/auth/login`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    user_id: parseInt(userId, 10), // backend expects number
-                    password: password
+                    user_id: parseInt(userId, 10),
+                    password
                 }),
             });
 
@@ -35,9 +33,15 @@ function Login() {
             }
 
             const data = await response.json();
-            login(data.token); // store token in context
-            navigate("/"); // redirect after login
 
+            // ✅ Corrected: use keys matching AuthProvider
+            login({
+                token: data.token,
+                role: data.role,
+                userId: data.userId
+            });
+
+            navigate("/"); // redirect after login
         } catch (err) {
             setError(err.message);
         } finally {
@@ -45,10 +49,11 @@ function Login() {
         }
     }
 
+
     return (
         <div className="flex items-center justify-center h-screen bg-gray-100">
-            <form 
-                onSubmit={handleLogin} 
+            <form
+                onSubmit={handleLogin}
                 className="bg-white p-8 rounded-lg shadow-lg w-96"
             >
                 <h2 className="text-2xl font-bold mb-6 text-center">Sign In</h2>
@@ -97,8 +102,8 @@ function Login() {
                 <div className="mt-4 text-center">
                     <p className="text-sm text-gray-600">
                         Don't have an account?{" "}
-                        <Link 
-                            to="/signup" 
+                        <Link
+                            to="/signup"
                             className="text-blue-600 hover:underline"
                         >
                             Sign Up

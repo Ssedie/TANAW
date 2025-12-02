@@ -1,6 +1,14 @@
 import { useAuth } from "../context/AuthProvider";
+import { useNavigate } from "react-router-dom";
+
 const Header = ({ onSidebarToggle, isSidebarOpen}) => {
-    const {logout} = useAuth();
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+      logout();
+      navigate("/login", { replace: true });
+    };
 
   return (
     <header className="bg-white shadow-sm">
@@ -51,16 +59,22 @@ const Header = ({ onSidebarToggle, isSidebarOpen}) => {
                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
               />
             </svg>
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white justify-center">
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
               7
             </span>
           </button>
+
           <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-bold text-white">
             RJ
           </div>
-          <div>
-            <button onClick={logout}></button>
-          </div>
+
+          <button 
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium"
+            title="Logout"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </header>

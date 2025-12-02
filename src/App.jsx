@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
-import Header from "./components/Header";
-import Sidebar from "./components/Sidebar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedLayout from "./components/ProtectedLayout";
 
 import Dashboard from "./pages/Dashboard";
 import About from "./pages/About";
@@ -13,6 +12,7 @@ import Projects from "./pages/Projects";
 import Documents from "./pages/Documents";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Logout from "./pages/Logout";
 
 const App = () => {
   const [sidebarToggle, setSidebarToggle] = useState(true);
@@ -23,41 +23,21 @@ const App = () => {
 
   return (
     <Routes>
-      {/* Public Route */}
+      {/* Public Routes */}
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup/>}/>
+      <Route path="/signup" element={<Signup />} />
 
       {/* Protected Routes */}
-      <Route
-        path="/*"
-        element={
-          <ProtectedRoute>
-            <div className="flex h-screen bg-gray-100">
-              <Sidebar
-                isOpen={sidebarToggle}
-                onClose={() => setSidebarToggle(false)}
-              />
-              <div className="flex-1 flex flex-col">
-                <Header
-                  onSidebarToggle={toggleSidebar}
-                  isSidebarOpen={sidebarToggle}
-                />
-                <main className="flex-1 bg-slate-200">
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/officials" element={<Officials />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/budget" element={<Budget />} />
-                    <Route path="/documents" element={<Documents />} />
-                    <Route path="/projects" element={<Projects />} />
-                  </Routes>
-                </main>
-              </div>
-            </div>
-          </ProtectedRoute>
-        }
-      />
+      <Route element={<ProtectedRoute><ProtectedLayout sidebarToggle={sidebarToggle} toggleSidebar={toggleSidebar} /></ProtectedRoute>}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/officials" element={<Officials />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/budget" element={<Budget />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/documents" element={<Documents />} />
+        <Route path="/logout" element={<Logout />} />
+      </Route>
     </Routes>
   );
 };

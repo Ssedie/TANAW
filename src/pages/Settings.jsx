@@ -19,7 +19,9 @@ const Settings = () => {
         mName: "",
         lName: "",
         street: "",
+        barangay: "",
         city: "",
+        province: "",
         region: "",
         country: "",
         zipCode: "",
@@ -53,7 +55,9 @@ const Settings = () => {
                 mName: data.mName || "",
                 lName: data.lName || "",
                 street: data.street || "",
+                barangay: data.barangay || "",
                 city: data.city || "",
+                province: data.province || "",
                 region: data.region || "",
                 country: data.country || "",
                 zipCode: data.zipCode || "",
@@ -87,7 +91,9 @@ const Settings = () => {
                     mName: userData.mName,
                     lName: userData.lName,
                     street: userData.street,
+                    barangay: userData.barangay,
                     city: userData.city,
+                    province: userData.province,
                     region: userData.region,
                     country: userData.country,
                     zipCode: userData.zipCode ? parseInt(userData.zipCode) : 0,
@@ -243,6 +249,16 @@ const Settings = () => {
                                     className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
+                                <input
+                                    type="text"
+                                    name="barangay"
+                                    value={userData.barangay}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                />
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
@@ -250,6 +266,16 @@ const Settings = () => {
                                         type="text"
                                         name="city"
                                         value={userData.city}
+                                        onChange={handleChange}
+                                        className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                                    <input
+                                        type="text"
+                                        name="province"
+                                        value={userData.province}
                                         onChange={handleChange}
                                         className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />

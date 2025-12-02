@@ -16,6 +16,7 @@ function Signup() {
     street: "",
     barangay:"",
     city: "",
+    province: "",
     region: "",
     country: "",
     zipCode: ""
@@ -66,6 +67,7 @@ function Signup() {
           street: form.street,
           barangay: form.barangay,
           city: form.city,
+          province: form.province,
           region: form.region,
           country: form.country,
           zipCode: form.zipCode ? parseInt(form.zipCode) : 0
@@ -217,6 +219,16 @@ function Signup() {
               type="text"
               name="city"
               value={form.city}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Province</label>
+            <input
+              type="text"
+              name="province"
+              value={form.province}
               onChange={handleChange}
               className="w-full p-2 border border-gray-300 rounded"
             />

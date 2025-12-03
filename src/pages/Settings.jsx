@@ -51,7 +51,7 @@ const Settings = () => {
             const data = await response.json();
             console.log("Fetched user data:", data);
             setUserData({
-                userId: data.userId || "",
+                userId: data.id || "",
                 email: data.email || "",
                 fName: data.fName || "",
                 mName: data.mName || "",
@@ -62,9 +62,9 @@ const Settings = () => {
                 province: data.province || "",
                 region: data.region || "",
                 country: data.country || "",
-                zipCode: userData.zipCode ? parseInt(userData.zipCode) : null,
+                zipCode: data.zipCode || "",
                 phoneNumber: data.phoneNumber || "",
-                birthDate: userData.birthDate ? new Date(userData.birthDate).toISOString() : null,
+                birthDate: data.birthDate ? new Date(data.birthDate).toISOString().split("T")[0] : "",
                 role: data.role || "CITIZEN",
                 accountStatus: data.accountStatus || "Active"
             });

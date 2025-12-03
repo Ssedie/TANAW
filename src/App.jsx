@@ -13,6 +13,7 @@ import Documents from "./pages/Documents";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Logout from "./pages/Logout";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const App = () => {
   const [sidebarToggle, setSidebarToggle] = useState(true);
@@ -36,6 +37,7 @@ const App = () => {
         <Route path="/budget" element={<Budget />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/documents" element={<Documents />} />
+        <Route path="/adminDashboard" element={<AdminDashboard/>}/>
         <Route path="/logout" element={<Logout />} />
       </Route>
     </Routes>

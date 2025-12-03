@@ -12,6 +12,7 @@ const Settings = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
+
     const [userData, setUserData] = useState({
         userId: "",
         email: "",
@@ -52,18 +53,18 @@ const Settings = () => {
             setUserData({
                 userId: data.userId || "",
                 email: data.email || "",
-                fName: data.fname || "",
-                mName: data.mname || "",
-                lName: data.lname || "",
+                fName: data.fName || "",
+                mName: data.mName || "",
+                lName: data.lName || "",
                 street: data.street || "",
                 barangay: data.barangay || "",
                 city: data.city || "",
                 province: data.province || "",
                 region: data.region || "",
                 country: data.country || "",
-                zipCode: data.zipCode || "",
+                zipCode: userData.zipCode ? parseInt(userData.zipCode) : null,
                 phoneNumber: data.phoneNumber || "",
-                birthDate: data.birthDate ? data.birthDate.split('T')[0] : "",
+                birthDate: userData.birthDate ? new Date(userData.birthDate).toISOString() : null,
                 role: data.role || "CITIZEN",
                 accountStatus: data.accountStatus || "Active"
             });
@@ -97,9 +98,9 @@ const Settings = () => {
                     province: userData.province,
                     region: userData.region,
                     country: userData.country,
-                    zipCode: userData.zipCode ? parseInt(userData.zipCode) : 0,
+                    zipCode: userData.zipCode ? parseInt(userData.zipCode) : null,
                     phoneNumber: userData.phoneNumber,
-                    birthDate: userData.birthDate
+                    birthDate: userData.birthDate ? new Date(userData.birthDate).toISOString() : null
                 })
             });
 
@@ -341,17 +342,6 @@ const Settings = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Admin Panel - visible only to admins */}
-                    {authRole === "ADMIN" && (
-                        <div className="mb-6 p-4 border border-red-300 rounded bg-red-50">
-                            <h2 className="text-xl font-semibold mb-2 text-red-700">Admin Panel</h2>
-                            <p className="text-red-600 mb-2">Only visible to admins.</p>
-                            <button className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                Admin Action
-                            </button>
-                        </div>
-                    )}
 
                     {/* Save Button */}
                     <div className="flex justify-end">

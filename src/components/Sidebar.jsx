@@ -1,7 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthProvider";
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
+  const { auth } = useAuth();  // get auth from context
+  const role = auth?.role || "CITIZEN"; // default to "CITIZEN"
+
   const menuItems = [
     { icon: "📊", label: "Dashboard", link: "/" },
     { icon: "💰", label: "Budget", link: "/budget" },
@@ -9,7 +13,10 @@ const Sidebar = ({ isOpen, onClose }) => {
     { icon: "🗞", label: "Documents", link: "/documents" },
     { icon: "ℹ", label: "About", link: "/about" },
     { icon: "👤", label: "Officials", link: "/officials" },
-    { icon: "⚙", label: "Settings", link: "/settings" }
+    { icon: "⚙", label: "Settings", link: "/settings" },
+    ...(role === "ADMIN"
+      ? [{ icon: "📊", label: "Admin Dashboard", link: "/adminDashboard" }]
+      : [])
   ];
 
   return (

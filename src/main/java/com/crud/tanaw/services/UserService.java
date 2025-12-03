@@ -82,6 +82,11 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
     private Integer generateUniqueUserId() {
         int id;
         do {
@@ -99,21 +104,36 @@ public class UserService {
     public User updateUserProfile(Long userId, UpdateProfileRequest request) {
         User user = findByUserId(userId);
 
+        // Update basic profile fields if they are not null
         if (request.fName() != null) user.setFName(request.fName());
         if (request.mName() != null) user.setMName(request.mName());
         if (request.lName() != null) user.setLName(request.lName());
+
         if (request.street() != null) user.setStreet(request.street());
         if (request.barangay() != null) user.setBarangay(request.barangay());
         if (request.city() != null) user.setCity(request.city());
-        if (request.province() != null) user.setCountry(request.province());
+        if (request.province() != null) user.setProvince(request.province());
         if (request.region() != null) user.setRegion(request.region());
         if (request.country() != null) user.setCountry(request.country());
-        if (request.zipCode() != null) user.setZipCode(request.zipCode());
+
+        // zipCode is a primitive int now, so we can set directly
+        user.setZipCode(request.zipCode());
+
         if (request.phoneNumber() != null) user.setPhoneNumber(request.phoneNumber());
 
-        // Handle birthDate conversion if needed
+        // Handle birthDate safely
+        if (request.birthDate() != null) {
+            user.setBirthDate(request.birthDate());
+        }
+
+        // If you want to allow updating email, password, role, you can add them here
+        if (request.email() != null) user.setEmail(request.email());
+        if (request.password() != null) user.setPassword(passwordEncoder.encode(request.password()));
+        if (request.role() != null) user.setRole(request.role());
 
         return userRepository.save(user);
     }
+
+
 }
 

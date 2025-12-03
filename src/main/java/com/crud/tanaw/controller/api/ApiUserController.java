@@ -1,5 +1,6 @@
 package com.crud.tanaw.controller.api;
 
+import com.crud.tanaw.dto.UserDTO;
 import com.crud.tanaw.dto.ReqRep.UpdateProfileRequest;
 import com.crud.tanaw.entities.User;
 import com.crud.tanaw.services.UserService;
@@ -17,15 +18,38 @@ public class ApiUserController {
     }
 
     @GetMapping("/profile")
-    public User getProfile(Authentication authentication) {
-        String userId = authentication.getName();
-        return userService.findByUserId(Long.valueOf(userId));
+    public UserDTO getProfile(Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName()); // make sure this is userId
+        User user = userService.findByUserId(userId);
+        return mapToDTO(user);
     }
 
     @PutMapping("/profile")
-    public User updateProfile(@RequestBody UpdateProfileRequest request,
-                              Authentication authentication) {
-        String userId = authentication.getName();
-        return userService.updateUserProfile(Long.valueOf(userId), request);
+    public UserDTO updateProfile(@RequestBody UpdateProfileRequest request,
+                                 Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        User updatedUser = userService.updateUserProfile(userId, request);
+        return mapToDTO(updatedUser);
+    }
+
+    private UserDTO mapToDTO(User user) {
+        return new UserDTO(
+                user.getUserId(),
+                user.getFName(),
+                user.getMName(),
+                user.getLName(),
+                user.getEmail(),
+                user.getRole(),
+                user.getPhoneNumber(),
+                user.getStreet(),
+                user.getBarangay(),
+                user.getCity(),
+                user.getProvince(),
+                user.getRegion(),
+                user.getCountry(),
+                user.getZipCode(),
+                user.getBirthDate()
+        );
     }
 }
+

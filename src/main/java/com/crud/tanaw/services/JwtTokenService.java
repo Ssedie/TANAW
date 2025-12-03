@@ -22,17 +22,17 @@ public class JwtTokenService {
         this.jwtDecoder = jwtDecoder;
     }
 
+    // Existing method for normal users
     public String generateToken(Authentication authentication) {
         Instant now = Instant.now();
         long expiresIn = 24 * 60 * 60;
 
         String userId = authentication.getName();
 
-        // Safely get role
         String role = authentication.getAuthorities().stream()
                 .findFirst()
                 .map(a -> a.getAuthority())
-                .orElse("CITIZEN"); // default role if none assigned
+                .orElse("CITIZEN");
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(userId)
@@ -42,7 +42,6 @@ public class JwtTokenService {
                 .claim("role", role)
                 .build();
 
-        // Add HS256 header
         var header = org.springframework.security.oauth2.jwt.JwsHeader
                 .with(MacAlgorithm.HS256)
                 .build();
@@ -51,6 +50,26 @@ public class JwtTokenService {
                 .getTokenValue();
     }
 
+    // New method for super admin or manual JWT creation
+    public String generateToken(Long userId, String role) {
+        Instant now = Instant.now();
+        long expiresIn = 24 * 60 * 60;
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .subject(String.valueOf(userId))
+                .issuer("self")
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(expiresIn))
+                .claim("role", role)
+                .build();
+
+        var header = org.springframework.security.oauth2.jwt.JwsHeader
+                .with(MacAlgorithm.HS256)
+                .build();
+
+        return jwtEncoder.encode(JwtEncoderParameters.from(header, claims))
+                .getTokenValue();
+    }
 
     public Long extractExpirationTime(String token) {
         Jwt jwt = jwtDecoder.decode(token);

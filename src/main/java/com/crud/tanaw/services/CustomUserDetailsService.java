@@ -19,22 +19,19 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String userIdStr) throws UsernameNotFoundException {
-        int userId;
-        try {
-            userId = Integer.parseInt(userIdStr);
-        } catch (NumberFormatException e) {
-            throw new UsernameNotFoundException("Invalid user ID format");
-        }
+    public UserDetails loadUserByUsername(String usernameOrId) throws UsernameNotFoundException {
+        User user;
 
-        User user = userRepository.findByUserId(userId)
+        // If you want email login, you can do this:
+        user = userRepository.findByEmail(usernameOrId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(String.valueOf(user.getUserId()))
-                .password(user.getPassword())
-                .authorities(Collections.emptyList())
-                .build();
+        return new CustomUserDetails(
+                user.getUserId(),
+                user.getEmail(),
+                user.getPassword(),
+                Collections.emptyList()
+        );
     }
-
 }
+

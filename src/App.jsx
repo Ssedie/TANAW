@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedLayout from "./components/ProtectedLayout";
+import Home from "./pages/Home";
 
 import Dashboard from "./pages/Dashboard";
 import About from "./pages/About";
@@ -29,15 +30,26 @@ const App = () => {
       <Route path="/signup" element={<Signup />} />
 
       {/* Protected Routes */}
-      <Route element={<ProtectedRoute><ProtectedLayout sidebarToggle={sidebarToggle} toggleSidebar={toggleSidebar} /></ProtectedRoute>}>
-        <Route path="/" element={<Dashboard />} />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <ProtectedLayout
+              sidebarToggle={sidebarToggle}
+              toggleSidebar={toggleSidebar}
+            />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/" element={<Home />} /> {/* Default Home page */}
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/about" element={<About />} />
         <Route path="/officials" element={<Officials />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/budget" element={<Budget />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/documents" element={<Documents />} />
-        <Route path="/adminDashboard" element={<AdminDashboard/>}/>
+        <Route path="/adminDashboard" element={<AdminDashboard />} />
         <Route path="/logout" element={<Logout />} />
       </Route>
     </Routes>

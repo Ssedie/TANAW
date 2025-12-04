@@ -3,7 +3,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
 import { API_URL } from "../config/constants";
 
-
 function Login() {
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
@@ -12,10 +11,8 @@ function Login() {
   const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
 
-
   const navigate = useNavigate();
   const { login } = useAuth();
-
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -24,27 +21,23 @@ function Login() {
     setPasswordError("");
     setLoading(true);
 
-
     let hasError = false;
 
-
+    // ✅ Frontend validation
     if (!/^\d{6}$/.test(userId)) {
       setUserIdError("User ID must be 6 digits");
       hasError = true;
     }
-
 
     if (!password) {
       setPasswordError("Password is required");
       hasError = true;
     }
 
-
     if (hasError) {
       setLoading(false);
       return;
     }
-
 
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -56,22 +49,20 @@ function Login() {
         }),
       });
 
-
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.message || "Invalid User ID or password");
+        // Highlight password if incorrect
+        setPasswordError(errData.message || "Incorrect User ID or password");
+        throw new Error(errData.message || "Incorrect User ID or password");
       }
 
-
       const data = await response.json();
-
 
       login({
         token: data.token,
         role: data.role,
         userId: data.userId,
       });
-
 
       navigate("/");
     } catch (err) {
@@ -80,7 +71,6 @@ function Login() {
       setLoading(false);
     }
   }
-
 
   return (
     <div className="h-screen w-full flex">
@@ -99,7 +89,6 @@ function Login() {
         </div>
       </div>
 
-
       {/* LEFT SIDE — LOGIN FORM */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-10">
         <form
@@ -108,13 +97,11 @@ function Login() {
         >
           <h2 className="text-[56px] font-bold mb-8 text-[#303D46]">Login</h2>
 
-
           {error && (
             <div className="mb-6 p-3 bg-red-100 border border-red-400 text-red-600 flex justify-center rounded">
               {error}
             </div>
           )}
-
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* User ID */}
@@ -136,7 +123,6 @@ function Login() {
               )}
             </div>
 
-
             {/* Password */}
             <div className="col-span-2">
               <label className="block mb-1 font-semibold">Password</label>
@@ -157,7 +143,6 @@ function Login() {
             </div>
           </div>
 
-
           <button
             type="submit"
             disabled={loading}
@@ -165,7 +150,6 @@ function Login() {
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
-
 
           <div className="mt-2 flex justify-center w-full">
             <p className="text-sm text-gray-600 text-center">
@@ -183,6 +167,5 @@ function Login() {
     </div>
   );
 }
-
 
 export default Login;

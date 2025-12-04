@@ -1,13 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
 
+
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { auth } = useAuth();  // get auth from context
   const role = auth?.role || "CITIZEN"; // default to "CITIZEN"
 
   const menuItems = [
-    { icon: "📊", label: "Dashboard", link: "/" },
+    { icon: "📊", label: "Dashboard", link: "/dashboard" },
     { icon: "💰", label: "Budget", link: "/budget" },
     { icon: "📦", label: "Projects", link: "/projects" },
     { icon: "🗞", label: "Documents", link: "/documents" },
@@ -42,7 +43,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       )}
 
       <div className="p-4">
-        <h2 className="text-2xl font-bold">Tanaw</h2>
+        <Link to="/" className="text-2xl font-bold text-white hover:text-gray-200">
+          Tanaw
+        </Link>
       </div>
 
       <nav className="mt-6">

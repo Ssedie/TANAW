@@ -52,7 +52,7 @@ function Dashboard() {
   };
 
   return (
-    <div className="p-8 bg-[#FAF7F1] min-h-screen">
+    <div className="p-8 min-h-screen">
 
       {/* Title */}
       <h1 className="text-4xl font-bold text-[#4B3A2F] mb-6">Dashboard Overview</h1>

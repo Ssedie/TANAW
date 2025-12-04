@@ -30,7 +30,7 @@ public class ApiExceptionHandler {
         body.put("timestamp", java.time.ZonedDateTime.now());
         body.put("status", HttpStatus.UNAUTHORIZED.value());
         body.put("error", "Unauthorized");
-        body.put("message", "Invalid username or password");
+        body.put("message", "Incorrect User Id or password");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 

@@ -45,7 +45,7 @@ public class ApiAuthController {
         // 1️⃣ Special case: SUPER ADMIN login
         if (Integer.valueOf(request.user_id()).equals(superAdminId)) {
             if (!request.password().equals(superAdminPassword)) {
-                throw new BadCredentialsException("Invalid User Id or Password");
+                throw new BadCredentialsException("Incorrect User Id or Password");
             }
 
             // Create an Authentication object for the super admin

@@ -22,9 +22,16 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String usernameOrId) throws UsernameNotFoundException {
         User user;
 
-        // If you want email login, you can do this:
-        user = userRepository.findByEmail(usernameOrId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        // Try parsing as an ID first
+        try {
+            int userId = Integer.parseInt(usernameOrId);
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        } catch (NumberFormatException e) {
+            // Not a number, fallback to email
+            user = userRepository.findByEmail(usernameOrId)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        }
 
         return new CustomUserDetails(
                 user.getUserId(),
@@ -33,5 +40,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 Collections.emptyList()
         );
     }
+
 }
 

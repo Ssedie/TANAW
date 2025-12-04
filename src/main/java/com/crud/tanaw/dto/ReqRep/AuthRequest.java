@@ -8,7 +8,7 @@ public record AuthRequest(
         @NotNull(message = "User ID is required")
         Integer user_id,
         @NotNull(message = "Password is required")
-        @Size(min = 6, message = "Password must be at least 6 characters long")
+        @Size(min = 8, message = "Password must be at least 8 characters long")
         String password
 ) {}
 

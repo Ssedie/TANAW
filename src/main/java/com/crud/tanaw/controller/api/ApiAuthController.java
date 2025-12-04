@@ -9,6 +9,7 @@ import com.crud.tanaw.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -44,7 +45,7 @@ public class ApiAuthController {
         // 1️⃣ Special case: SUPER ADMIN login
         if (Integer.valueOf(request.user_id()).equals(superAdminId)) {
             if (!request.password().equals(superAdminPassword)) {
-                throw new RuntimeException("Invalid credentials");
+                throw new BadCredentialsException("Invalid User Id or Password");
             }
 
             // Create an Authentication object for the super admin

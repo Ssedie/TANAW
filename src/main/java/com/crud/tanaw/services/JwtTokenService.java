@@ -31,7 +31,7 @@ public class JwtTokenService {
 
         String role = authentication.getAuthorities().stream()
                 .findFirst()
-                .map(a -> a.getAuthority())
+                .map(a -> a.getAuthority().replace("ROLE_", ""))
                 .orElse("CITIZEN");
 
         JwtClaimsSet claims = JwtClaimsSet.builder()

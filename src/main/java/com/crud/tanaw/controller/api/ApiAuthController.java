@@ -55,7 +55,7 @@ public class ApiAuthController {
                     Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
             );
 
-            String token = jwtTokenService.generateToken(superAdminAuth);
+            String token = jwtTokenService.generateToken(superAdminId.longValue(), "ADMIN");
             Long expiresAt = jwtTokenService.extractExpirationTime(token);
 
             return new AuthResponse(token, superAdminId, expiresAt, "ADMIN");

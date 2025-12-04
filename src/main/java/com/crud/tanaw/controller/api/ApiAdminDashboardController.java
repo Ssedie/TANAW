@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,11 +27,14 @@ public class ApiAdminDashboardController {
     // Only super admin can get all users
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers(Authentication auth) {
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        Integer currentUserId = userDetails.getUserId();
+        // Extract JWT claims
+        Jwt jwt = (Jwt) auth.getPrincipal();
+        Integer currentUserId = Integer.valueOf(jwt.getSubject());
+        String role = jwt.getClaimAsString("role");
 
-        if (!currentUserId.equals(superAdminId)) {
-            return ResponseEntity.status(403).body("Only the super admin can access this endpoint.");
+        // Only allow ADMIN
+        if (!"ADMIN".equals(role)) {
+            return ResponseEntity.status(403).body("Forbidden");
         }
 
         List<User> users = userRepository.findAll();
@@ -44,11 +48,12 @@ public class ApiAdminDashboardController {
             @RequestParam String role,
             Authentication auth
     ) {
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        Integer currentUserId = userDetails.getUserId();
+        Jwt jwt = (Jwt) auth.getPrincipal();
+        Integer currentUserId = Integer.valueOf(jwt.getSubject());
+        String currentUserRole = jwt.getClaimAsString("role");
 
-        if (!currentUserId.equals(superAdminId)) {
-            return ResponseEntity.status(403).body("Only the super admin can change roles.");
+        if (!"ADMIN".equals(currentUserRole)) {
+            return ResponseEntity.status(403).body("Forbidden");
         }
 
         User target = userRepository.findById(userId)
@@ -67,11 +72,12 @@ public class ApiAdminDashboardController {
             @RequestBody User updatedUser,
             Authentication auth
     ) {
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        Integer currentUserId = userDetails.getUserId();
+        Jwt jwt = (Jwt) auth.getPrincipal();
+        Integer currentUserId = Integer.valueOf(jwt.getSubject());
+        String role = jwt.getClaimAsString("role");
 
-        if (!currentUserId.equals(superAdminId)) {
-            return ResponseEntity.status(403).body("Only the super admin can update user information.");
+        if (!"ADMIN".equals(role)) {
+            return ResponseEntity.status(403).body("Forbidden");
         }
 
         User user = userRepository.findById(userId)
@@ -104,11 +110,12 @@ public class ApiAdminDashboardController {
             @RequestParam String newPassword,
             Authentication auth
     ) {
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        Integer currentUserId = userDetails.getUserId();
+        Jwt jwt = (Jwt) auth.getPrincipal();
+        Integer currentUserId = Integer.valueOf(jwt.getSubject());
+        String role = jwt.getClaimAsString("role");
 
-        if (!currentUserId.equals(superAdminId)) {
-            return ResponseEntity.status(403).body("Only the super admin can change passwords.");
+        if (!"ADMIN".equals(role)) {
+            return ResponseEntity.status(403).body("Forbidden");
         }
 
         User target = userRepository.findById(userId)
@@ -127,10 +134,11 @@ public class ApiAdminDashboardController {
             @RequestParam String newPassword,
             Authentication auth
     ) {
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        Integer userId = userDetails.getUserId();
+        Jwt jwt = (Jwt) auth.getPrincipal();
+        Integer currentUserId = Integer.valueOf(jwt.getSubject());
+        String role = jwt.getClaimAsString("role");
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {

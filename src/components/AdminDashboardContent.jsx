@@ -14,7 +14,7 @@ const AdminDashboardContent = () => {
     const fetchUsers = async () => {
       try {
         const response = await axios.get("http://localhost:8000/api/admin/users", {
-          headers: { Authorization: `Bearer ${auth.token}` }
+          headers: { Authorization: `Bearer ${auth.token}` },
         });
         setUsers(response.data);
       } catch (err) {
@@ -61,185 +61,55 @@ const AdminDashboardContent = () => {
     }
   };
 
-  const handleInputChange = (userId, field, value) => {
-    setUsers(prev =>
-      prev.map(user => (user.id === userId ? { ...user, [field]: value } : user))
-    );
-  };
-
-  const handleSaveChanges = async (user) => {
-    try {
-      await axios.put(
-        `http://localhost:8000/api/admin/users/${user.id}`,
-        user,
-        { headers: { Authorization: `Bearer ${auth.token}` } }
-      );
-      alert("User info updated successfully");
-    } catch (err) {
-      console.error("Error saving user info:", err);
-      alert(err.response?.data || "Failed to save user info");
-    }
-  };
-
-  if (loading) return <div className="p-4">Loading users...</div>;
-  if (error) return <div className="text-red-600 p-4">{error}</div>;
+  if (loading) return <div className="p-6 text-gray-600">Loading users...</div>;
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
 
   return (
-    <div className="p-4 overflow-auto">
-      <h2 className="text-2xl font-bold mb-4">Super Admin Dashboard</h2>
-      {users.length === 0 ? (
-        <p>No users found.</p>
-      ) : (
-        <table className="w-full border-collapse border border-gray-300 min-w-max">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border p-2">ID</th>
-              <th className="border p-2">First Name</th>
-              <th className="border p-2">Middle Name</th>
-              <th className="border p-2">Last Name</th>
-              <th className="border p-2">Email</th>
-              <th className="border p-2">Role</th>
-              <th className="border p-2">Birth Date</th>
-              <th className="border p-2">Street</th>
-              <th className="border p-2">Barangay</th>
-              <th className="border p-2">City</th>
-              <th className="border p-2">Province</th>
-              <th className="border p-2">Region</th>
-              <th className="border p-2">Country</th>
-              <th className="border p-2">Zip Code</th>
-              <th className="border p-2">Phone</th>
-              <th className="border p-2">Actions</th>
+    <div className="p-6 overflow-auto">
+      <h2 className="text-3xl font-bold mb-6 text-[#5C7D92]">Admin Dashboard</h2>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-collapse rounded-lg overflow-hidden shadow-lg">
+          <thead className="bg-gradient-to-r from-[#5C7D92] to-[#D87300] text-white">
+            <tr>
+              <th className="py-3 px-4 text-left">ID</th>
+              <th className="py-3 px-4 text-left">Name</th>
+              <th className="py-3 px-4 text-left">Email</th>
+              <th className="py-3 px-4 text-left">Role</th>
+              <th className="py-3 px-4 text-left">Status</th>
+              <th className="py-3 px-4 text-left">Phone</th>
+              <th className="py-3 px-4 text-left">Address</th>
+              <th className="py-3 px-4 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {users.map(user => (
-              <tr key={user.id}>
-                <td className="border p-2">{user.id}</td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.fName}
-                    onChange={(e) => handleInputChange(user.id, "fName", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.mName || ""}
-                    onChange={(e) => handleInputChange(user.id, "mName", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.lName}
-                    onChange={(e) => handleInputChange(user.id, "lName", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="email"
-                    value={user.email}
-                    onChange={(e) => handleInputChange(user.id, "email", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
+              <tr
+                key={user.id}
+                className="bg-white hover:bg-gray-100 transition-colors duration-200"
+              >
+                <td className="py-3 px-4">{user.userId}</td>
+                <td className="py-3 px-4">{user.fname} {user.mname} {user.lname}</td>
+                <td className="py-3 px-4">{user.email}</td>
+                <td className="py-3 px-4">
                   <select
                     value={user.role}
                     onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                    className="border rounded p-1"
+                    className="rounded-lg p-1 text-black font-medium"
                   >
                     <option value="CITIZEN">CITIZEN</option>
                     <option value="ADMIN">ADMIN</option>
-                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                   </select>
                 </td>
-                <td className="border p-2">
-                  <input
-                    type="date"
-                    value={user.birthDate || ""}
-                    onChange={(e) => handleInputChange(user.id, "birthDate", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
+                <td className="py-3 px-4">{user.accountStatus}</td>
+                <td className="py-3 px-4">{user.phoneNumber || "-"}</td>
+                <td className="py-3 px-4">
+                  {user.street}, {user.barangay}, {user.city}, {user.province}, {user.region}, {user.country}, {user.zipCode || "-"}
                 </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.street || ""}
-                    onChange={(e) => handleInputChange(user.id, "street", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.barangay || ""}
-                    onChange={(e) => handleInputChange(user.id, "barangay", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.city || ""}
-                    onChange={(e) => handleInputChange(user.id, "city", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.province || ""}
-                    onChange={(e) => handleInputChange(user.id, "province", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.region || ""}
-                    onChange={(e) => handleInputChange(user.id, "region", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.country || ""}
-                    onChange={(e) => handleInputChange(user.id, "country", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="number"
-                    value={user.zipCode || ""}
-                    onChange={(e) => handleInputChange(user.id, "zipCode", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    value={user.phoneNumber || ""}
-                    onChange={(e) => handleInputChange(user.id, "phoneNumber", e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="border p-2 flex flex-col gap-1">
-                  <button
-                    onClick={() => handleSaveChanges(user)}
-                    className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-                  >
-                    Save
-                  </button>
+                <td className="py-3 px-4 flex gap-2">
                   <button
                     onClick={() => handlePasswordReset(user.id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                    className="bg-[#5C7D92] hover:bg-[#4e6b7d] text-white px-3 py-1 rounded-lg transition-colors duration-200"
                   >
                     Reset Password
                   </button>
@@ -248,7 +118,7 @@ const AdminDashboardContent = () => {
             ))}
           </tbody>
         </table>
-      )}
+      </div>
     </div>
   );
 };

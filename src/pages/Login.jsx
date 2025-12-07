@@ -63,7 +63,7 @@ function Login() {
         userId: data.userId,
       });
 
-      navigate("/");
+      navigate("/home");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -192,6 +192,7 @@ function Login() {
 
           <button
             type="submit"
+            to="/home"
             disabled={loading}
             className="w-full bg-[#FF6404] text-white p-4 rounded-lg font-semibold hover:bg-[#e55a00] transition mb-4"
           >

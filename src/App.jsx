@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import Budget from "./pages/Budget";
 import Projects from "./pages/Projects";
 import Documents from "./pages/Documents";
+import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Logout from "./pages/Logout";
@@ -28,6 +29,7 @@ const App = () => {
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/" element={<LandingPage />} />
 
       {/* Protected Routes */}
 
@@ -41,7 +43,8 @@ const App = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Home />} /> {/* Default Home page */}
+        
+        <Route path="/home" element={<Home />} /> {/* Default Home page */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/about" element={<About />} />
         <Route path="/officials" element={<Officials />} />

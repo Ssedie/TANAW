@@ -64,7 +64,7 @@ function Login() {
         userId: data.userId,
       });
 
-      navigate("/");
+      navigate("/home");
     } catch (err) {
       setError(err.message);
     } finally {

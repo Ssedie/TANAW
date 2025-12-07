@@ -85,7 +85,7 @@ const AdminDashboardContent = () => {
           <tbody>
             {users.map(user => (
               <tr
-                key={user.id}
+                key={user.userId}
                 className="bg-white hover:bg-gray-100 transition-colors duration-200"
               >
                 <td className="py-3 px-4">{user.userId}</td>
@@ -94,7 +94,7 @@ const AdminDashboardContent = () => {
                 <td className="py-3 px-4">
                   <select
                     value={user.role}
-                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                    onChange={(e) => handleRoleChange(user.userId, e.target.value)}
                     className="rounded-lg p-1 text-black font-medium"
                   >
                     <option value="CITIZEN">CITIZEN</option>
@@ -108,7 +108,7 @@ const AdminDashboardContent = () => {
                 </td>
                 <td className="py-3 px-4 flex gap-2">
                   <button
-                    onClick={() => handlePasswordReset(user.id)}
+                    onClick={() => handlePasswordReset(user.userId)}
                     className="bg-[#5C7D92] hover:bg-[#4e6b7d] text-white px-3 py-1 rounded-lg transition-colors duration-200"
                   >
                     Reset Password

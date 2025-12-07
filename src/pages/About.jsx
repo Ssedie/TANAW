@@ -1,7 +1,145 @@
-function About(){
-    return(
-        <h1>About Page</h1>
-    )
-}   
+import React from "react";
+
+const officials = {
+  leaders: [
+    { name: "Juan Dela Cruz", role: "Barangay Captain", photo: "https://via.placeholder.com/200x150", bio: "Leads the barangay and oversees all projects and operations." },
+    { name: "Maria Santos", role: "Barangay Secretary", photo: "https://via.placeholder.com/200x150", bio: "Manages official records, resolutions, and correspondence." },
+    { name: "Pedro Reyes", role: "Barangay Treasurer", photo: "https://via.placeholder.com/200x150", bio: "Handles barangay funds, budgeting, and financial reports." },
+  ],
+  councilors: [
+    { name: "Ana Lopez", role: "Councilor", photo: "https://via.placeholder.com/200x150", bio: "Supports community projects and local legislation." },
+    { name: "Carlos Ramos", role: "Councilor", photo: "https://via.placeholder.com/200x150", bio: "Responsible for health and sanitation programs." },
+    { name: "Liza Mendoza", role: "Councilor", photo: "https://via.placeholder.com/200x150", bio: "Focuses on education and youth programs." },
+    { name: "Rafael Cruz", role: "Councilor", photo: "https://via.placeholder.com/200x150", bio: "Works on infrastructure and public safety." },
+    { name: "Gloria Santos", role: "Councilor", photo: "https://via.placeholder.com/200x150", bio: "Oversees livelihood and community development projects." },
+  ],
+  sk: [
+    { name: "Michael Tan", role: "SK Chairperson", photo: "https://via.placeholder.com/200x150", bio: "Represents the youth and implements youth programs." },
+    { name: "Angela Reyes", role: "SK Councilor", photo: "https://via.placeholder.com/200x150", bio: "Supports youth development initiatives." },
+    { name: "Dennis Lopez", role: "SK Councilor", photo: "https://via.placeholder.com/200x150", bio: "Focuses on youth sports and educational activities." },
+    { name: "Patricia Ramos", role: "SK Councilor", photo: "https://via.placeholder.com/200x150", bio: "Encourages youth participation in barangay governance." },
+  ],
+};
+
+const developers = [
+  { name: "Rhayven Alano", role: "Frontend Developer", photo: "https://via.placeholder.com/200x150" },
+  { name: "Zedric Rulloda", role: "Backend Developer", photo: "https://via.placeholder.com/200x150" },
+];
+
+const About = () => {
+  const renderOfficialCard = (official) => (
+    <div
+      key={official.name}
+      className="bg-white p-4 rounded-2xl shadow-md hover:shadow-xl transition duration-300 flex flex-col items-center group relative"
+    >
+      <img
+        src={official.photo}
+        alt={official.name}
+        className="w-full h-40 object-cover mb-4 rounded-lg"
+      />
+      <h4 className="font-bold text-lg text-[#FF6404]">{official.name}</h4>
+      <p className="text-gray-600 text-sm">{official.role}</p>
+      <div className="absolute inset-0 bg-[#FF6404]/90 text-white p-4 rounded-2xl flex items-center justify-center text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <p className="text-sm">{official.bio}</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 px-6 py-12 space-y-16">
+
+      {/* Hero / Intro */}
+      <section className="w-full bg-[#5C7D92] py-16 px-6 rounded-2xl text-center">
+        <h1 className="text-5xl font-bold text-white mb-4">About Barangay Taboc</h1>
+        <p className="text-gray-200 text-lg md:text-xl max-w-3xl mx-auto">
+          Barangay Taboc is committed to transparency, accountability, and community development. Tanaw brings you closer to your local government, letting you see budgets, projects, and updates in real-time.
+        </p>
+      </section>
+
+      {/* Mission & Vision */}
+      <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-white p-8 rounded-2xl shadow-md">
+          <h2 className="text-2xl font-bold text-[#FF6404] mb-4">Mission</h2>
+          <p className="text-gray-700">
+            To promote transparency, citizen engagement, and efficient delivery of public services through accessible information and active community participation.
+          </p>
+        </div>
+        <div className="bg-white p-8 rounded-2xl shadow-md">
+          <h2 className="text-2xl font-bold text-[#FF6404] mb-4">Vision</h2>
+          <p className="text-gray-700">
+            To create a community where every citizen is informed, empowered, and actively contributes to the progress and well-being of Barangay Taboc.
+          </p>
+        </div>
+      </section>
+
+      {/* Purpose */}
+      <section className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-md text-center">
+        <h2 className="text-3xl font-bold text-[#5C7D92] mb-4">Purpose</h2>
+        <p className="text-gray-700 text-lg">
+          The Tanaw platform was created to increase transparency in barangay governance, provide real-time updates on budgets and projects, and empower citizens to participate actively in community development.
+        </p>
+      </section>
+
+      {/* Officials Hierarchy */}
+<section>
+  <h2 className="text-4xl font-bold text-[#5C7D92] text-center mb-12">
+    Barangay Officials
+  </h2>
+
+  {/* Captain at the top */}
+  <div className="flex justify-center mb-8">
+    <div className="w-full max-w-xs sm:max-w-sm">
+      {renderOfficialCard(officials.leaders[0])}
+    </div>
+  </div>
+
+  {/* Secretary & Treasurer */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 justify-center mb-12 max-w-4xl mx-auto">
+    {officials.leaders.slice(1).map(renderOfficialCard)}
+  </div>
+
+  {/* Councilors */}
+  <div className="mb-12">
+    <h3 className="text-3xl font-bold text-[#5C7D92] text-center mb-8">Councilors</h3>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-6xl mx-auto">
+      {officials.councilors.map(renderOfficialCard)}
+    </div>
+  </div>
+
+  {/* SK Officials */}
+  <div>
+    <h3 className="text-3xl font-bold text-[#5C7D92] text-center mb-8">SK Officials</h3>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+      {officials.sk.map(renderOfficialCard)}
+    </div>
+  </div>
+</section>
+
+
+      {/* Developers */}
+      <section>
+        <h2 className="text-4xl font-bold text-[#5C7D92] text-center mb-12">
+          Developers
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          {developers.map((dev, index) => (
+            <div
+              key={index}
+              className="bg-white p-4 rounded-2xl shadow-md hover:shadow-xl transition duration-300 flex flex-col items-center"
+            >
+              <img
+                src={dev.photo}
+                alt={dev.name}
+                className="w-full h-40 object-cover mb-4 rounded-lg"
+              />
+              <h3 className="font-bold text-lg text-[#FF6404]">{dev.name}</h3>
+              <p className="text-gray-600 text-sm">{dev.role}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+};
 
 export default About;

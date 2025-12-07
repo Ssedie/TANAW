@@ -444,7 +444,7 @@ function Signup() {
       {/* RIGHT SECTION */}
       <div
         className="hidden md:flex w-1/2 relative rounded-tl-[300px] rounded-bl-[300px] shadow-2xl bg-cover bg-center"
-        style={{ backgroundImage: "url('src/assets/taboc.jpg')" }}
+        style={{ backgroundImage: "url('src/assets/bg.jpg')" }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-[#5C7D92]/90 to-[#FF6404]/90 rounded-tl-[300px] rounded-bl-[300px]"></div>
         <div className="absolute top-[30%] left-[8%] z-10 max-w-[696px] text-white font-istok">

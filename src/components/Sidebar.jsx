@@ -43,7 +43,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       )}
 
       <div className="p-4">
-        <Link to="/" className="text-2xl font-bold text-white hover:text-gray-200">
+        <Link to="/home" className="text-2xl font-bold text-white hover:text-gray-200">
           Tanaw
         </Link>
       </div>

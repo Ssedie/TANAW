@@ -13,7 +13,6 @@ import Settings from "./pages/Settings";
 import Budget from "./pages/Budget";
 import Projects from "./pages/Projects";
 import Documents from "./pages/Documents";
-import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Logout from "./pages/Logout";

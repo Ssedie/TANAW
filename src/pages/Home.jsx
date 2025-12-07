@@ -1,5 +1,8 @@
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col items-center w-full h-full bg-transparent">
       {/* Hero Section */}
@@ -12,7 +15,9 @@ const Home = () => {
             Tanaw brings barangay budgets and project updates directly to your
             community. Real-time transparency, real impact, real accountability.
           </p>
-          <button className="h-[55px] w-[211px] text-[20px] bg-white text-black font-semibold rounded-[20px] hover:bg-gray-200 transition-colors duration-200">
+          <button
+            onClick={() => navigate("/about")}
+           className="h-[55px] w-[211px] text-[20px] bg-white text-black font-semibold rounded-[20px] hover:bg-gray-200 transition-colors duration-200">
             Learn More
           </button>
         </div>

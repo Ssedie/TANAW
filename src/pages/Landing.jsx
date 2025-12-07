@@ -1,6 +1,8 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const LandingPage = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="h-screen w-full relative">
       {/* BACKGROUND IMAGE */}
@@ -33,18 +35,18 @@ const LandingPage = () => {
             Tanaw brings barangay budgets and project updates directly to your community. Real-time transparency, real impact, real accountability.
           </p>
           <div className="flex gap-4">
-            <Link
-              to="/about"
+            <button
+              onClick={() => navigate("/about") }
               className="px-6 py-3 bg-white text-[#FF6404] font-semibold rounded-lg hover:bg-gray-100 transition"
             >
               Learn More
-            </Link>
-            <Link
-              to="/login"
+            </button>
+            <button
+              onClick={() => navigate("/login")}
               className="px-6 py-3 bg-[#FF6404] text-white font-semibold rounded-lg hover:bg-[#e55a00] transition"
             >
               Get Started
-            </Link>
+            </button>
           </div>
         </div>
 

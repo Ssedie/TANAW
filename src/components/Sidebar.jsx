@@ -8,6 +8,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const role = auth?.role || "CITIZEN"; // default to "CITIZEN"
 
   const menuItems = [
+    { icon: "🏠", label: "Home", link: "/home" },
     { icon: "📊", label: "Dashboard", link: "/dashboard" },
     { icon: "💰", label: "Budget", link: "/budget" },
     { icon: "📦", label: "Projects", link: "/projects" },

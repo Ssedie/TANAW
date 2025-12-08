@@ -8,7 +8,6 @@ import Home from "./pages/Home";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import About from "./pages/About";
-import Officials from "./pages/Officials";
 import Settings from "./pages/Settings";
 import Budget from "./pages/Budget";
 import Projects from "./pages/Projects";
@@ -94,7 +93,6 @@ const App = () => {
           <Route path="/home" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/about" element={<About />} />
-          <Route path="/officials" element={<Officials />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/budget" element={<Budget />} />
           <Route path="/projects" element={<Projects />} />

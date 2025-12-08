@@ -50,9 +50,11 @@ const About = () => {
 
       {/* Hero / Intro */}
       <section className="w-full bg-[#5C7D92] py-16 px-6 rounded-2xl text-center">
-        <h1 className="text-5xl font-bold text-white mb-4">About Barangay Taboc</h1>
+        <h1 className="text-5xl font-bold text-white mb-4">About Tanaw: Barangay Budget and Transparency App</h1>
         <p className="text-gray-200 text-lg md:text-xl max-w-3xl mx-auto">
-          Barangay Taboc is committed to transparency, accountability, and community development. Tanaw brings you closer to your local government, letting you see budgets, projects, and updates in real-time.
+               Tanaw is a digital platform designed to promote transparency, accountability, and accessibility in barangay governance. Specifically developed for Barangay Taboc, San Juan, La Union, the system provides citizens and barangay officials with a convenient way to view, manage, and track barangay budgets, projects, and documents.
+
+     Through Tanaw, citizens can now stay informed about how funds are allocated and utilized, while officials can efficiently organize and publish important barangay records—all in one secure, centralized system.
         </p>
       </section>
 

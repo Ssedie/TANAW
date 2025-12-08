@@ -14,7 +14,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     { icon: "📦", label: "Projects", link: "/projects" },
     { icon: "🗞", label: "Documents", link: "/documents" },
     { icon: "ℹ", label: "About", link: "/about" },
-    { icon: "👤", label: "Officials", link: "/officials" },
     { icon: "⚙", label: "Settings", link: "/settings" },
     ...(role === "ADMIN"
       ? [{ icon: "📊", label: "Admin Dashboard", link: "/adminDashboard" }]

@@ -170,7 +170,7 @@ function Signup() {
 
   function handleCloseModal() {
     setShowModal(false);
-    navigate("/");
+    navigate("/login");
   }
 
   return (
@@ -465,9 +465,10 @@ function Signup() {
             <p className="text-xs text-gray-500 mb-4">⚠️ Save or screenshot your User ID.</p>
             <button
               onClick={handleCloseModal}
+              to="/login"
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
-              Go to Dashboard
+              Go to Login
             </button>
           </div>
         </div>

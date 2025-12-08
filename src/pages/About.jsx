@@ -46,76 +46,93 @@ const About = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 px-6 py-12 space-y-16">
+    <div className="min-h-screen px-6 py-6 space-y-6 ">
 
       {/* Hero / Intro */}
-      <section className="w-full bg-[#5C7D92] py-16 px-6 rounded-2xl text-center">
-        <h1 className="text-5xl font-bold text-white mb-4">About Tanaw: Barangay Budget and Transparency App</h1>
-        <p className="text-gray-200 text-lg md:text-xl max-w-3xl mx-auto">
-               Tanaw is a digital platform designed to promote transparency, accountability, and accessibility in barangay governance. Specifically developed for Barangay Taboc, San Juan, La Union, the system provides citizens and barangay officials with a convenient way to view, manage, and track barangay budgets, projects, and documents.
+<section className="w-full bg-[#475C68] py-8 px-8 rounded-2xl text-left shadow-md hover:shadow-2xl transition-shadow duration-300">
+  <h1 className="text-5xl font-bold text-white mb-4">
+    About Tanaw: Barangay Budget and Transparency App
+  </h1>
+  <p className="text-gray-200 text-lg">
+    Tanaw is a digital platform designed to promote transparency, accountability, and accessibility in barangay governance. Specifically developed for Barangay Taboc, San Juan, La Union, the system provides citizens and barangay officials with a convenient way to view, manage, and track barangay budgets, projects, and documents.
+  </p>
+  <p className="text-gray-200 text-lg mt-4">
+    Through Tanaw, citizens can now stay informed about how funds are allocated and utilized, while officials can efficiently organize and publish important barangay records—all in one secure, centralized system.
+  </p>
+</section>
 
-     Through Tanaw, citizens can now stay informed about how funds are allocated and utilized, while officials can efficiently organize and publish important barangay records—all in one secure, centralized system.
-        </p>
-      </section>
-
-      {/* Mission & Vision */}
-      <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-2xl shadow-md">
-          <h2 className="text-2xl font-bold text-[#FF6404] mb-4">Mission</h2>
-          <p className="text-gray-700">
-            To promote transparency, citizen engagement, and efficient delivery of public services through accessible information and active community participation.
-          </p>
-        </div>
-        <div className="bg-white p-8 rounded-2xl shadow-md">
-          <h2 className="text-2xl font-bold text-[#FF6404] mb-4">Vision</h2>
-          <p className="text-gray-700">
-            To create a community where every citizen is informed, empowered, and actively contributes to the progress and well-being of Barangay Taboc.
-          </p>
-        </div>
-      </section>
-
-      {/* Purpose */}
-      <section className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-md text-center">
-        <h2 className="text-3xl font-bold text-[#5C7D92] mb-4">Purpose</h2>
-        <p className="text-gray-700 text-lg">
-          The Tanaw platform was created to increase transparency in barangay governance, provide real-time updates on budgets and projects, and empower citizens to participate actively in community development.
-        </p>
-      </section>
-
-      {/* Officials Hierarchy */}
-<section>
-  <h2 className="text-4xl font-bold text-[#5C7D92] text-center mb-12">
-    Barangay Officials
-  </h2>
-
-  {/* Captain at the top */}
-  <div className="flex justify-center mb-8">
-    <div className="w-full max-w-xs sm:max-w-sm">
-      {renderOfficialCard(officials.leaders[0])}
-    </div>
+{/* Mission & Vision */}
+<section className="max-w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+  <div className="bg-gradient-to-b from-[#475C68] to-[#5C7D92] p-6 rounded-2xl shadow-md hover:shadow-2xl transition-shadow duration-300">
+    <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Mission</h2>
+    <p className="text-white text-lg pl-2">
+      “A transparent, accountable, and digitally empowered barangay where citizens and officials work hand in hand for progress.”
+    </p>
   </div>
-
-  {/* Secretary & Treasurer */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 justify-center mb-12 max-w-4xl mx-auto">
-    {officials.leaders.slice(1).map(renderOfficialCard)}
-  </div>
-
-  {/* Councilors */}
-  <div className="mb-12">
-    <h3 className="text-3xl font-bold text-[#5C7D92] text-center mb-8">Councilors</h3>
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-6xl mx-auto">
-      {officials.councilors.map(renderOfficialCard)}
-    </div>
-  </div>
-
-  {/* SK Officials */}
-  <div>
-    <h3 className="text-3xl font-bold text-[#5C7D92] text-center mb-8">SK Officials</h3>
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-      {officials.sk.map(renderOfficialCard)}
-    </div>
+  <div className="bg-gradient-to-b from-[#475C68] to-[#5C7D92] p-6 rounded-2xl shadow-md hover:shadow-2xl transition-shadow duration-300">
+    <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Vision</h2>
+    <p className="text-white text-lg pl-2">
+      “To provide an accessible and reliable platform that enhances public awareness and promotes honesty in barangay budgeting and project implementation.”
+    </p>
   </div>
 </section>
+
+{/* Purpose */}
+<section className="w-full bg-gradient-to-b from-[#5C7D92] via-[#FFFFFF] to-[#D87300] p-8 rounded-2xl shadow-md mt-8 hover:shadow-2xl transition-shadow duration-300">
+  <h2 className="text-3xl font-bold text-left mb-4">Purpose</h2>
+  <p className="mb-4 text-lg text-left">
+    <strong>Tanaw</strong> aims to digitize barangay record management and improve public transparency by providing a user-friendly web application where:
+  </p>
+
+  <ul className="list-disc list-inside text-left text-lg pl-4">
+    <li className="mb-2">
+      <strong>Officials</strong> can upload and manage budget proposals, projects, and documents.
+    </li>
+    <li className="mb-2">
+      <strong>Citizens</strong> can access approved budgets, read project details, and give feedback.
+    </li>
+    <li className="mb-2">
+      <strong>Admins</strong> can monitor user activity, approve accounts, and maintain data integrity.
+    </li>
+  </ul>
+</section>
+
+
+
+      {/* Officials Hierarchy */}
+      <section>
+        <h2 className="text-6xl font-black text-[#D87300] text-center shadow-sm-black mt-8 mb-12">
+          Brgy. Taboc Officials
+        </h2>
+
+        {/* Captain at the top */}
+        <div className="flex justify-center mb-8">
+          <div className="w-full max-w-xs sm:max-w-sm">
+            {renderOfficialCard(officials.leaders[0])}
+          </div>
+        </div>
+
+        {/* Secretary & Treasurer */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 justify-center mb-12 max-w-4xl mx-auto">
+          {officials.leaders.slice(1).map(renderOfficialCard)}
+        </div>
+
+        {/* Councilors */}
+        <div className="mb-12">
+          <h3 className="text-3xl font-bold text-[#5C7D92] text-center mb-8">Councilors</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-6xl mx-auto">
+            {officials.councilors.map(renderOfficialCard)}
+          </div>
+        </div>
+
+        {/* SK Officials */}
+        <div>
+          <h3 className="text-3xl font-bold text-[#5C7D92] text-center mb-8">SK Officials</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            {officials.sk.map(renderOfficialCard)}
+          </div>
+        </div>
+      </section>
 
 
       {/* Developers */}

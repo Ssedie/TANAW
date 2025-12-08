@@ -2,7 +2,7 @@ import { useAuth } from "../context/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
 const Header = ({ onSidebarToggle, isSidebarOpen }) => {
-  const { logout } = useAuth();
+  const { auth, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -10,11 +10,25 @@ const Header = ({ onSidebarToggle, isSidebarOpen }) => {
     navigate("/login", { replace: true });
   };
 
+  // Safely get user info
+  const user = auth?.user || auth; // supports both auth.user or flat auth
+  const fName = user?.fName || "";
+  const lName = user?.lName || "";
+  const profileImage = user?.profileImage || null;
+
+  // Generate initials
+  const userInitials = `${fName[0] || "R"}${lName[0] || "J"}`;
+
+  // Handle profile click
+  const handleProfileClick = () => {
+    navigate("/settings");
+  };
+
   return (
     <header className="bg-white shadow-sm">
       <div className="flex items-center px-6 py-4">
 
-        {/* Sidebar toggle (optional, stays on left) */}
+        {/* Sidebar toggle */}
         {!isSidebarOpen && (
           <button onClick={onSidebarToggle} className="mr-4">
             <svg
@@ -29,7 +43,7 @@ const Header = ({ onSidebarToggle, isSidebarOpen }) => {
           </button>
         )}
 
-        {/* HEADER CONTENT — always on right */}
+        {/* HEADER CONTENT — right side */}
         <div className="flex items-center space-x-4 ml-auto">
           
           {/* Search */}
@@ -51,7 +65,7 @@ const Header = ({ onSidebarToggle, isSidebarOpen }) => {
             />
           </div>
 
-          {/* Notification */}
+          {/* Notifications */}
           <button className="relative text-gray-600 hover:text-gray-900">
             <svg
               className="w-6 h-6"
@@ -72,8 +86,19 @@ const Header = ({ onSidebarToggle, isSidebarOpen }) => {
           </button>
 
           {/* Profile */}
-          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-bold text-white">
-            RJ
+          <div
+            onClick={handleProfileClick}
+            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-blue-500 cursor-pointer hover:shadow-lg transition"
+          >
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile"
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              userInitials
+            )}
           </div>
 
           {/* Logout */}

@@ -21,14 +21,17 @@ const Sidebar = ({ isOpen, onClose }) => {
   ];
 
   return (
-    <div
-      className={`relative overflow-hidden bg-secondary text-white transition-all duration-300 
-      ${isOpen ? "w-64" : "w-0"}`}
-    >
+<div
+  className={`fixed top-0 left-0 overflow-hidden bg-secondary text-white transition-all duration-300 z-50
+  ${isOpen ? "w-64" : "w-0"} h-screen`}
+>
+
+
+
       {isOpen && (
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 hover:opacity-80 transition"
+          className="absolute top-5 right-3 hover:opacity-80 transition"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -43,7 +46,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       )}
 
       <div className="p-4">
-        <Link to="/home" className="text-2xl font-bold text-white hover:text-gray-200">
+        <Link to="/home" className="text-3xl font-bold text-white hover:text-gray-200">
           Tanaw
         </Link>
       </div>

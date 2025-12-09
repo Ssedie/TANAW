@@ -12,24 +12,24 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     const userId = localStorage.getItem("userId");
-
+    const fName = localStorage.getItem("fName") || "";
+    const lName = localStorage.getItem("lName") || "";
     if (token && role && userId) {
-      setAuth({ token, role, userId });
-    }
-
-    if (token) {
+      setAuth({ token, role, userId, fName, lName });
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
 
     setLoading(false); // done checking
   }, []);
 
-  function login({ token, role, userId }) {
-    setAuth({ token, role, userId });
+  function login({ token, role, userId, fName, lName }) {
+    setAuth({ token, role, userId, fName, lName });
 
     localStorage.setItem("token", token);
     localStorage.setItem("role", role);
     localStorage.setItem("userId", userId);
+    localStorage.setItem("fName", fName);
+    localStorage.setItem("lName", lName);
 
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   }
@@ -39,6 +39,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("userId");
+    localStorage.removeItem("fName");
+    localStorage.removeItem("lName");
     delete axios.defaults.headers.common["Authorization"];
   }
 

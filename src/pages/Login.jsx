@@ -61,6 +61,8 @@ function Login() {
         token: data.token,
         role: data.role,
         userId: data.userId,
+        fName: data.fName,
+        lName: data.lName,
       });
 
       navigate("/home");

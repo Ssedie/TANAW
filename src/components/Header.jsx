@@ -10,13 +10,15 @@ const Header = ({ onSidebarToggle, isSidebarOpen }) => {
     navigate("/login", { replace: true });
   };
 
-  // Safely get user info
-  const user = auth?.user || auth; // supports both auth.user or flat auth
+  console.log("AUTH CONTENT:", auth);
+
+  const user = auth?.user || auth; // supports nested or flat
+
+  const userId = user?.userId;   // <--- now safe
   const fName = user?.fName || "";
   const lName = user?.lName || "";
   const profileImage = user?.profileImage || null;
 
-  // Generate initials
   const userInitials = `${fName[0] || "R"}${lName[0] || "J"}`;
 
   // Handle profile click
@@ -45,7 +47,7 @@ const Header = ({ onSidebarToggle, isSidebarOpen }) => {
 
         {/* HEADER CONTENT — right side */}
         <div className="flex items-center space-x-4 ml-auto">
-          
+
           {/* Search */}
           <div className="relative">
             <svg
@@ -102,7 +104,7 @@ const Header = ({ onSidebarToggle, isSidebarOpen }) => {
           </div>
 
           {/* Logout */}
-          <button 
+          <button
             onClick={handleLogout}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium"
             title="Logout"

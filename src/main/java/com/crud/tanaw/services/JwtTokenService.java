@@ -27,7 +27,8 @@ public class JwtTokenService {
         Instant now = Instant.now();
         long expiresIn = 24 * 60 * 60;
 
-        String userId = authentication.getName();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String userId = String.valueOf(userDetails.getUserId());
 
         String role = authentication.getAuthorities().stream()
                 .findFirst()

@@ -18,6 +18,9 @@ public class Document {
     private String documentType;
     private String documentTitle;
 
+    @Lob
+    private byte[] content;
+
     @Temporal(TemporalType.TIMESTAMP)
     private Date uploadDate;
 
@@ -55,4 +58,12 @@ public class Document {
 
     public User getUploader() { return uploader; }
     public void setUploader(User uploader) { this.uploader = uploader; }
+
+    public byte[] getContent() {
+        return content;
+    }
+
+    public void setContent(byte[] content) {
+        this.content = content;
+    }
 }

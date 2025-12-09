@@ -58,7 +58,7 @@ public class ApiAuthController {
             String token = jwtTokenService.generateToken(superAdminId.longValue(), "ADMIN");
             Long expiresAt = jwtTokenService.extractExpirationTime(token);
 
-            return new AuthResponse(token, superAdminId, expiresAt, "ADMIN");
+            return new AuthResponse(token, superAdminId, expiresAt, "ADMIN","Super", "Admin" );
         }
 
         // 2️⃣ Normal user login
@@ -74,7 +74,10 @@ public class ApiAuthController {
 
         User user = userService.findByUserId(Long.valueOf(request.user_id()));
 
-        return new AuthResponse(token, user.getUserId(), expiresAt, user.getRole());
+        String fName = user.getFName() != null ? user.getFName() : "";
+        String lName = user.getLName() != null ? user.getLName() : "";
+
+        return new AuthResponse(token, user.getUserId(), expiresAt, user.getRole(), fName, lName);
     }
 
     @PostMapping("/register")
@@ -121,7 +124,9 @@ public class ApiAuthController {
                 token,
                 savedUser.getUserId(),
                 expiresAt,
-                savedUser.getRole()
+                savedUser.getRole(),
+                savedUser.getFName(),
+                savedUser.getLName()
         );
     }
 

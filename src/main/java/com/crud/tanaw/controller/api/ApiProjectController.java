@@ -10,6 +10,8 @@ import com.crud.tanaw.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -53,6 +55,15 @@ public class ApiProjectController {
             @RequestParam Long userId
     ) {
         try {
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String role = auth.getAuthorities().iterator().next().getAuthority();
+
+            if (!role.equals("ADMIN")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Only admins can create projects.");
+            }
+
             // Check user existence
             User user = userRepository.findById(userId.intValue())
                     .orElseThrow(() -> new RuntimeException("User not found"));

@@ -73,7 +73,7 @@ function Projects() {
     formData.append("projectStatus", projectStatus);
     formData.append("feedback", feedback);
     if (documentFile) formData.append("document", documentFile);
-    formData.append("userId", auth.userId); // associate project with logged-in user
+    formData.append("userId", Number(auth.userId)); // associate project with logged-in user
 
     try {
       setSubmitting(true);
@@ -129,7 +129,8 @@ function Projects() {
       </div>
 
       {/* Add Project Form */}
-      <div className="bg-white p-6 rounded-2xl shadow mb-8">
+      {auth.role === "ADMIN" &&(
+        <div className="bg-white p-6 rounded-2xl shadow mb-8">
         <h2 className="text-2xl font-semibold mb-4">Add New Project</h2>
         <form onSubmit={handleAddProject} className="grid grid-cols-1 gap-4">
           <input
@@ -193,6 +194,8 @@ function Projects() {
           </button>
         </form>
       </div>
+      )}
+      
 
       {/* Projects List */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

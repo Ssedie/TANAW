@@ -16,7 +16,7 @@ public class Activity {
     private String description;
     private Date date;
     private String status;
-    private String expenses;
+    private Double expenses;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
@@ -70,11 +70,11 @@ public class Activity {
         this.status = status;
     }
 
-    public String getExpenses() {
+    public Double getExpenses() {
         return expenses;
     }
 
-    public void setExpenses(String expenses) {
+    public void setExpenses(Double expenses) {
         this.expenses = expenses;
     }
 

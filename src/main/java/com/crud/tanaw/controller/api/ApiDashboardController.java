@@ -1,22 +1,17 @@
 package com.crud.tanaw.controller.api;
 
-import com.crud.tanaw.dto.dashboardDTO.BudgetSummaryDTO;
-import com.crud.tanaw.dto.dashboardDTO.ProjectFeedbackDTO;
-import com.crud.tanaw.dto.dashboardDTO.ProjectsByStatusDTO;
-import com.crud.tanaw.dto.dashboardDTO.UsersByStatusDTO;
+import com.crud.tanaw.dto.ActivityDTO;
+import com.crud.tanaw.dto.dashboardDTO.*;
 import com.crud.tanaw.entities.Project;
 import com.crud.tanaw.repositories.DashboardRepository;
 import com.crud.tanaw.repositories.ProjectRepository;
+import com.crud.tanaw.services.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -24,47 +19,66 @@ import java.util.Map;
 public class ApiDashboardController {
 
     private final DashboardRepository dashboardRepository;
+    private final DashboardService dashboardService;
     private final ProjectRepository projectRepository;
 
+    // --- Users by status ---
     @GetMapping("/users-by-status")
     public List<UsersByStatusDTO> getUsersByStatus() {
         return dashboardRepository.countUsersByStatus();
     }
 
-    @GetMapping("/projects-by-status")
-    public List<ProjectsByStatusDTO> getProjectsByStatus() {
-        return dashboardRepository.countProjectsByStatus();
+    // --- Dashboard overview (total budgets, project counts, etc) ---
+    @GetMapping("/overview")
+    public ResponseEntity<DashboardOverviewDTO> getOverview() {
+        Date today = new Date();
+        Double totalBudget = dashboardRepository.sumApprovedBudget();
+        Double totalSpent = dashboardRepository.sumTotalExpenses();
+        Long activeProjects = projectRepository.count();
+        Long onTimeProjects = projectRepository.countOnTime(today);
+        Long delayedProjects = projectRepository.countDelayed(today);
+        Long feedbackCount = dashboardRepository.countAllFeedbacks();
+
+        DashboardOverviewDTO overview = new DashboardOverviewDTO(
+                totalBudget,
+                totalSpent,
+                activeProjects,
+                onTimeProjects,
+                delayedProjects,
+                feedbackCount
+        );
+
+        return ResponseEntity.ok(overview);
     }
 
+    // --- Budget distribution by sector ---
+    @GetMapping("/budget-distribution")
+    public List<BudgetDistributionDTO> getBudgetDistribution() {
+        return dashboardRepository.findBudgetDistributionByDocumentType();
+    }
+
+    // --- Projects status table ---
+    @GetMapping("/project-status")
+    public List<ProjectStatusDTO> getProjectStatus() {
+        return dashboardService.getProjectStatusList();
+    }
+
+
+    // --- Feedback summary per project ---
     @GetMapping("/project-feedback")
-    public List<ProjectFeedbackDTO> getProjectFeedbackCount() {
-        return dashboardRepository.projectFeedbackCount();
+    public List<FeedbackSummaryDTO> getProjectFeedbackCounts() {
+        return dashboardRepository.findFeedbackSummary();
     }
 
+    // --- Detailed feedbacks for a project ---
     @GetMapping("/feedbacks/{projectId}")
-    public List<?> getFeedbacksByProject(@PathVariable Integer projectId) {
+    public List<FeedbackWithRepliesDTO> getFeedbacksByProject(@PathVariable Integer projectId) {
         return dashboardRepository.findFeedbacksWithRepliesByProject(projectId);
     }
 
-    @GetMapping("/budget-summary")
-    public ResponseEntity<?> getBudgetSummary() {
-        List<Project> projects = projectRepository.findAll();
-
-        // Sum budgets by status
-        Map<String, Double> summary = new HashMap<>();
-        summary.put("ONGOING", projects.stream()
-                .filter(p -> "ONGOING".equals(p.getProjectStatus()))
-                .mapToDouble(p -> Double.parseDouble(p.getAllocatedBudget()))
-                .sum());
-        summary.put("COMPLETED", projects.stream()
-                .filter(p -> "COMPLETED".equals(p.getProjectStatus()))
-                .mapToDouble(p -> Double.parseDouble(p.getAllocatedBudget()))
-                .sum());
-        summary.put("CANCELLED", projects.stream()
-                .filter(p -> "CANCELLED".equals(p.getProjectStatus()))
-                .mapToDouble(p -> Double.parseDouble(p.getAllocatedBudget()))
-                .sum());
-
-        return ResponseEntity.ok(summary);
+    // --- Optional: activities ---
+    @GetMapping("/activities")
+    public List<ActivityDTO> getRecentActivities() {
+        return dashboardRepository.findRecentActivities();
     }
 }

@@ -13,7 +13,7 @@ public class Budget {
     private Integer budgetId;
 
     private String fiscalYear;
-    private Double approvedBudget;
+    private Double totalBudget;
     private Double totalExpenses;
     private String description;
 
@@ -37,8 +37,8 @@ public class Budget {
     public String getFiscalYear() { return fiscalYear; }
     public void setFiscalYear(String fiscalYear) { this.fiscalYear = fiscalYear; }
 
-    public Double getApprovedBudget() { return approvedBudget; }
-    public void setApprovedBudget(Double approvedBudget) { this.approvedBudget = approvedBudget; }
+    public Double getTotalBudget() { return totalBudget; }
+    public void setTotalBudget(Double totalBudget) { this.totalBudget = totalBudget; }
 
     public Double getTotalExpenses() { return totalExpenses; }
     public void setTotalExpenses(Double totalExpenses) { this.totalExpenses = totalExpenses; }

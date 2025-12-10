@@ -1,7 +1,11 @@
 package com.crud.tanaw.repositories;
 
+import com.crud.tanaw.dto.ActivityDTO;
 import com.crud.tanaw.dto.dashboardDTO.*;
+import com.crud.tanaw.entities.Budget;
+import com.crud.tanaw.entities.Feedback;
 import com.crud.tanaw.entities.Project;
+import com.crud.tanaw.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -11,30 +15,58 @@ import java.util.List;
 @Repository
 public interface DashboardRepository extends JpaRepository<Project, Integer> {
 
+    // --- Users by status ---
     @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.UsersByStatusDTO(u.accountStatus, COUNT(u)) " +
             "FROM User u GROUP BY u.accountStatus")
     List<UsersByStatusDTO> countUsersByStatus();
 
-    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.ProjectsByStatusDTO(p.projectStatus, COUNT(p)) " +
-            "FROM Project p GROUP BY p.projectStatus")
-    List<ProjectsByStatusDTO> countProjectsByStatus();
+    // --- Sum approved budget ---
+    @Query("SELECT COALESCE(SUM(b.totalBudget), 0) FROM Budget b")
+    Double sumApprovedBudget();
 
-    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.ProjectFeedbackDTO(p.projectName, COUNT(f)) " +
-            "FROM Project p LEFT JOIN p.feedbacks f GROUP BY p.projectName")
-    List<ProjectFeedbackDTO> projectFeedbackCount();
+    // --- Sum total expenses ---
+    @Query("SELECT COALESCE(SUM(b.totalExpenses), 0) FROM Budget b")
+    Double sumTotalExpenses();
 
-    @Query("SELECT f FROM Feedback f LEFT JOIN FETCH f.reply WHERE f.project.projectId = :projectId")
-    List<com.crud.tanaw.entities.Feedback> findFeedbacksWithRepliesByProject(Integer projectId);
 
-    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.BudgetSummaryDTO(" +
-            "d.documentTitle, " +
-            "COALESCE(CAST(SUM(b.approvedBudget) AS double), 0.0), " +
-            "COALESCE(CAST(SUM(b.totalExpenses) AS double), 0.0)) " +
+    // --- Budget distribution by document type / sector ---
+    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.BudgetDistributionDTO(" +
+            "b.document.documentType, CAST(SUM(COALESCE(b.totalBudget,0))AS DOUBLE))  " +
             "FROM Budget b " +
-            "JOIN b.document d " +
-            "GROUP BY d.documentTitle")
-    List<BudgetSummaryDTO> budgetSummary();
+            "GROUP BY b.document.documentType")
+    List<BudgetDistributionDTO> findBudgetDistributionByDocumentType();
 
+    // --- Project status table ---
+    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.ProjectStatusDTO(" +
+            "p.projectId, " +
+            "p.projectName, " +
+            "COALESCE(p.allocatedBudget, 0), " +
+            "(SELECT COALESCE(SUM(a.expenses), 0) FROM Activity a WHERE a.project.projectId = p.projectId), " +
+            "p.projectStatus, " +
+            "p.endDate) " +
+            "FROM Project p")
+    List<ProjectStatusDTO> findAllProjectStatus();
 
+    // --- Feedback summary per project ---
+    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.FeedbackSummaryDTO(" +
+            "p.projectId, p.projectName, COUNT(f)) " +
+            "FROM Project p LEFT JOIN p.feedbacks f " +
+            "GROUP BY p.projectId, p.projectName")
+    List<FeedbackSummaryDTO> findFeedbackSummary();
+
+    @Query("SELECT COUNT(f) FROM Feedback f")
+    Long countAllFeedbacks();
+
+    // --- Detailed feedbacks for a specific project with replies ---
+    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.FeedbackWithRepliesDTO(f.content, r.content) " +
+            "FROM Feedback f LEFT JOIN f.reply r " +
+            "WHERE f.project.projectId = :projectId")
+    List<FeedbackWithRepliesDTO> findFeedbacksWithRepliesByProject(Integer projectId);
+
+    // --- Optional: recent activities (if you implement ActivityDTO) ---
+    @Query("SELECT new com.crud.tanaw.dto.ActivityDTO(a.activityId, a.activityName, a.description, a.date, a.status, a.expenses, a.project.projectId) " +
+            "FROM Activity a " +
+            "ORDER BY a.date DESC")
+    List<ActivityDTO> findRecentActivities();
 
 }

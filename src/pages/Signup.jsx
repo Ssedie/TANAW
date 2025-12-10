@@ -41,9 +41,13 @@ function Signup() {
     const errors = {};
 
     // Email
-    if (!form.email) errors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email))
-      errors.email = "Invalid email format";
+if (!form.email) {
+  errors.email = "Email is required";
+} else if (!form.email.includes("@")) {
+  errors.email = "Email must contain @";
+} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email)) {
+  errors.email = "Invalid email format";
+}
 
     // First Name
     if (!form.fName) errors.fName = "First Name is required";
@@ -177,8 +181,8 @@ function Signup() {
     <div className="h-screen w-full flex">
       {/* LEFT – FORM */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8">
-        <div className="w-full max-w-2xl">
-          <form onSubmit={handleSignup} className="bg-white p-10 rounded-2xl">
+        <div className="w-full max-w-2xl m-10">
+          <form onSubmit={handleSignup} className="bg-white m-0 p-0 rounded-2xl">
             <h2 className="text-[56px] font-bold mb-6 text-[#303D46]">Sign Up</h2>
 
             {/* Global Error */}
@@ -195,7 +199,7 @@ function Signup() {
               <div className="col-span-2">
                 <label className="block mb-1 font-semibold">Email</label>
                 <input
-                  type="email"
+                  type="text"
                   name="email"
                   value={form.email}
                   onChange={handleChange}

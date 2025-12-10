@@ -51,7 +51,7 @@ const LandingPage = () => {
         </div>
 
         {/* RIGHT SIDE */}
-<div className="w-1/2 h-full flex justify-center items-center mt-9">
+<div className="w-1/2 h-full flex justify-center items-center mt-0">
   <div className="relative flex justify-center items-center">
     {/* Circle behind */}
     <div className="absolute w-[550px] h-[550px] rounded-full bg-black/60"></div>

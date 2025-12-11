@@ -2,6 +2,8 @@ package com.crud.tanaw.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.List;
+
 public class ProjectDTO {
 
     Integer projectId;
@@ -16,6 +18,7 @@ public class ProjectDTO {
     @NotBlank(message = "Please provide some feedback for the project.")
     private String feedback;
     Integer documentId;
+    private List<ActivityDTO> activities;
 
     public String getProjectName() {
         return projectName;
@@ -70,4 +73,7 @@ public class ProjectDTO {
     public void setDocumentId(Integer documentId) {
         this.documentId = documentId;
     }
+
+    public List<ActivityDTO> getActivities() { return activities; }
+    public void setActivities(List<ActivityDTO> activities) { this.activities = activities; }
 }

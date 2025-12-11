@@ -13,6 +13,9 @@ public interface ActivityRepository extends JpaRepository<Activity, Integer> {
     List<Activity> findByProjectProjectId(Integer projectId);
     List<Activity> findByProjectHeadUserId(Integer userId);
 
+    @Query("SELECT COALESCE(SUM(a.expenses), 0) FROM Activity a")
+    Double sumAllExpenses();
+
     @Query("SELECT a FROM Activity a ORDER BY a.date DESC")
     List<Activity> findRecentActivities();
 }

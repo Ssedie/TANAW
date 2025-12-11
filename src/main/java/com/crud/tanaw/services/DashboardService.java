@@ -46,8 +46,8 @@ public class DashboardService {
     public DashboardOverviewDTO getOverview() {
         Budget budget = budgetRepo.findTopByOrderByUploadDateDesc();
 
-        Double totalBudget = budget != null ? budget.getTotalBudget() : 0.0;
-        Double totalSpent = budget != null ? budget.getTotalExpenses() : 0.0;
+        Double totalBudget = Optional.ofNullable(budgetRepo.sumApprovedBudget()).orElse(0.0);
+        Double totalSpent = Optional.ofNullable(activityRepo.sumAllExpenses()).orElse(0.0);
         Long activeProjects = Optional.ofNullable(projectRepo.countByProjectStatus("Active")).orElse(0L);
 
         Date now = new Date();

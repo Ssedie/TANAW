@@ -48,55 +48,32 @@ const Settings = () => {
 
       if (!response.ok) throw new Error("Failed to fetch profile");
 
-      const data = await response.json();
-
-      setUserData((prev) => ({
-        ...prev,
-        userId: data.userId || "",
-        email: data.email || "",
-        fName: data.fname || "",
-        mName: data.mname || "",
-        lName: data.lname || "",
-        street: data.street || "",
-        barangay: data.barangay || "",
-        city: data.city || "",
-        province: data.province || "",
-        region: data.region || "",
-        country: data.country || "",
-        zipCode: data.zipCode || "",
-        phoneNumber: data.phoneNumber || "",
-        birthDate: data.birthDate
-          ? new Date(data.birthDate).toISOString().split("T")[0]
-          : "",
-        role: data.role || "CITIZEN",
-        accountStatus: data.accountStatus || "Active",
-        picturePreview: data.picturePath ? `${API_URL}/${data.picturePath}` : null, // show existing image
-      }));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+            const data = await response.json();
+            console.log("Fetched user data:", data);
+            setUserData({
+                userId: data.userId || "",
+                email: data.email || "",
+                fName: data.fname || "",
+                mName: data.mname || "",
+                lName: data.lname || "",
+                street: data.street || "",
+                barangay: data.barangay || "",
+                city: data.city || "",
+                province: data.province || "",
+                region: data.region || "",
+                country: data.country || "",
+                zipCode: data.zipCode || "",
+                phoneNumber: data.phoneNumber || "",
+                birthDate: data.birthDate ? new Date(data.birthDate).toISOString().split("T")[0] : "",
+                role: data.role || "CITIZEN",
+                accountStatus: data.accountStatus || "Active"
+            });
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     }
-  }
-
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setUserData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  }
-
-  function handleFileChange(e) {
-    const file = e.target.files[0];
-    if (file) {
-      setUserData((prev) => ({
-        ...prev,
-        picture: file,
-        picturePreview: URL.createObjectURL(file),
-      }));
-    }
-  }
 
   async function handleSubmit(e) {
   e.preventDefault();

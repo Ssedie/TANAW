@@ -32,6 +32,7 @@ const Settings = () => {
     picturePreview: "/default-user.png",
   });
 
+  // Fetch user profile on component mount
   useEffect(() => {
     fetchUserProfile();
   }, []);
@@ -43,6 +44,7 @@ const Settings = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch profile");
+
       const data = await response.json();
 
       setUserData({
@@ -63,10 +65,10 @@ const Settings = () => {
           ? new Date(data.birthDate).toISOString().split("T")[0]
           : "",
         role: data.role || "",
-        accountStatus: data.accountStatus || "",
+        accountStatus: data.accountStatus || data.account_status || "",
         picture: null,
         picturePreview: data.picturePath
-          ? `${API_URL}/${data.picturePath}?t=${Date.now()}`
+          ? `${API_URL}/uploads/${data.picturePath}?t=${Date.now()}`
           : "/default-user.png",
       });
     } catch (err) {
@@ -128,19 +130,20 @@ const Settings = () => {
 
       const updatedData = await response.json();
 
+      // Update local state
       setUserData((prev) => ({
         ...prev,
         ...updatedData,
         picture: null,
         picturePreview: updatedData.picturePath
-          ? `${API_URL}/${updatedData.picturePath}?t=${Date.now()}`
+          ? `${API_URL}/uploads/${updatedData.picturePath}?t=${Date.now()}`
           : prev.picturePreview,
       }));
 
       // Update global auth
       if (setAuth) {
         const profileImage = updatedData.picturePath
-          ? `${API_URL}/${updatedData.picturePath}?t=${Date.now()}`
+          ? `${API_URL}/uploads/${updatedData.picturePath}?t=${Date.now()}`
           : auth?.profileImage || null;
 
         setAuth((prev) => ({
@@ -202,13 +205,11 @@ const Settings = () => {
           {/* Account Info */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-700">Account Information</h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
                 <input type="text" value={userData.userId} disabled className="w-full p-2 border bg-gray-100 rounded" />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input type="email" value={userData.email} disabled className="w-full p-2 border bg-gray-100 rounded" />
@@ -219,79 +220,31 @@ const Settings = () => {
           {/* Personal Info */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-700">Personal Information</h2>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input type="text" name="fName" value={userData.fName} onChange={handleChange} className="w-full p-2 border rounded" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                <input type="text" name="mName" value={userData.mName} onChange={handleChange} className="w-full p-2 border rounded" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input type="text" name="lName" value={userData.lName} onChange={handleChange} className="w-full p-2 border rounded" />
-              </div>
+              <input type="text" name="fName" value={userData.fName} onChange={handleChange} className="w-full p-2 border rounded" placeholder="First Name" />
+              <input type="text" name="mName" value={userData.mName} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Middle Name" />
+              <input type="text" name="lName" value={userData.lName} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Last Name" />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                <input type="tel" name="phoneNumber" value={userData.phoneNumber} onChange={handleChange} className="w-full p-2 border rounded" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Birth Date</label>
-                <input type="date" name="birthDate" value={userData.birthDate} onChange={handleChange} className="w-full p-2 border rounded" />
-              </div>
+              <input type="tel" name="phoneNumber" value={userData.phoneNumber} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Phone Number" />
+              <input type="date" name="birthDate" value={userData.birthDate} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Birth Date" />
             </div>
           </div>
 
           {/* Address */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-700">Address</h2>
-
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Street</label>
-                <input type="text" name="street" value={userData.street} onChange={handleChange} className="w-full p-2 border rounded" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
-                <input type="text" name="barangay" value={userData.barangay} onChange={handleChange} className="w-full p-2 border rounded" />
-              </div>
-
+              <input type="text" name="street" value={userData.street} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Street" />
+              <input type="text" name="barangay" value={userData.barangay} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Barangay" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                  <input type="text" name="city" value={userData.city} onChange={handleChange} className="w-full p-2 border rounded" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-                  <input type="text" name="province" value={userData.province} onChange={handleChange} className="w-full p-2 border rounded" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
-                  <input type="text" name="region" value={userData.region} onChange={handleChange} className="w-full p-2 border rounded" />
-                </div>
+                <input type="text" name="city" value={userData.city} onChange={handleChange} className="w-full p-2 border rounded" placeholder="City" />
+                <input type="text" name="province" value={userData.province} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Province" />
+                <input type="text" name="region" value={userData.region} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Region" />
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                  <input type="text" name="country" value={userData.country} onChange={handleChange} className="w-full p-2 border rounded" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Zip Code</label>
-                  <input type="text" name="zipCode" value={userData.zipCode} onChange={handleChange} className="w-full p-2 border rounded" />
-                </div>
+                <input type="text" name="country" value={userData.country} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Country" />
+                <input type="text" name="zipCode" value={userData.zipCode} onChange={handleChange} className="w-full p-2 border rounded" placeholder="Zip Code" />
               </div>
             </div>
           </div>
@@ -299,17 +252,9 @@ const Settings = () => {
           {/* Account Status */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-700">Account Status</h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <input type="text" value={userData.role} disabled className="w-full p-2 border bg-gray-100 rounded" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <input type="text" value={userData.accountStatus} disabled className="w-full p-2 border bg-gray-100 rounded" />
-              </div>
+              <input type="text" value={userData.role} disabled className="w-full p-2 border bg-gray-100 rounded" placeholder="Role" />
+              <input type="text" value={userData.accountStatus} disabled className="w-full p-2 border bg-gray-100 rounded" placeholder="Status" />
             </div>
           </div>
 

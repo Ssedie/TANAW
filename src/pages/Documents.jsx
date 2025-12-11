@@ -13,6 +13,7 @@ function Documents() {
   const [totalBudget, setTotalBudget] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Fetch documents from backend
   const fetchDocuments = async () => {
     if (!auth?.token) return;
     try {
@@ -29,6 +30,7 @@ function Documents() {
     fetchDocuments();
   }, [auth]);
 
+  // Handle document upload (Admin only)
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file || !title || !type) {
@@ -40,7 +42,8 @@ function Documents() {
     formData.append("title", title);
     formData.append("type", type);
     formData.append("file", file);
-    if (type === "Approved Budget" && totalBudget) {
+
+    if (type === "Project Plan" && totalBudget) {
       formData.append("totalBudget", totalBudget);
     }
 
@@ -52,12 +55,14 @@ function Documents() {
           "Content-Type": "multipart/form-data",
         },
       });
+
       alert("Document uploaded successfully!");
+      // Reset form fields
       setTitle("");
       setType("General");
       setFile(null);
       setTotalBudget("");
-      fetchDocuments(); // refresh list
+      fetchDocuments(); // Refresh the document list
     } catch (err) {
       console.error(err);
       alert("Upload failed");
@@ -70,68 +75,69 @@ function Documents() {
     <div className="p-6 min-h-screen bg-gray-50">
       <h1 className="text-3xl font-bold text-[#4B3A2F] mb-6">Documents</h1>
 
-      {/* Upload Form */}
-      <div className="bg-white shadow rounded p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Upload Document</h2>
-        <form onSubmit={handleUpload} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded p-2"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Type</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded p-2"
-            >
-              <option value="General">General</option>
-              <option value="Approved Budget">Approved Budget</option>
-              <option value="Project Plan">Project Plan</option>
-            </select>
-          </div>
-
-          {type === "Approved Budget" && (
+      {/* Admin-only Upload Form */}
+      {auth?.role === "ADMIN" && (
+        <div className="bg-white shadow rounded p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Upload Document</h2>
+          <form onSubmit={handleUpload} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Total Budget</label>
+              <label className="block text-sm font-medium text-gray-700">Title</label>
               <input
-                type="number"
-                value={totalBudget}
-                onChange={(e) => setTotalBudget(e.target.value)}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded p-2"
                 required
               />
             </div>
-          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">File</label>
-            <input
-              type="file"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="mt-1 block w-full"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Type</label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded p-2"
+              >
+                <option value="General">General</option>
+                <option value="Project Plan">Project Plan</option>
+              </select>
+            </div>
 
-          <button
-            type="submit"
-            className="px-4 py-2 bg-[#4B3A2F] text-white rounded"
-            disabled={loading}
-          >
-            {loading ? "Uploading..." : "Upload Document"}
-          </button>
-        </form>
-      </div>
+            {type === "Project Plan" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Total Budget</label>
+                <input
+                  type="number"
+                  value={totalBudget}
+                  onChange={(e) => setTotalBudget(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded p-2"
+                  required
+                />
+              </div>
+            )}
 
-      {/* Document List */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">File</label>
+              <input
+                type="file"
+                onChange={(e) => setFile(e.target.files[0])}
+                className="mt-1 block w-full"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-[#4B3A2F] text-white rounded hover:bg-[#3a2c24]"
+            >
+              {loading ? "Uploading..." : "Upload Document"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Document List (Visible to all roles) */}
       <div className="bg-white shadow rounded p-6">
         <h2 className="text-xl font-semibold mb-4">Uploaded Documents</h2>
         {documents.length === 0 ? (
@@ -139,7 +145,10 @@ function Documents() {
         ) : (
           <ul className="space-y-2">
             {documents.map((doc) => (
-              <li key={doc.documentId} className="p-2 border rounded flex justify-between items-center">
+              <li
+                key={doc.documentId}
+                className="p-2 border rounded flex justify-between items-center hover:bg-gray-50"
+              >
                 <div>
                   <div className="font-medium">{doc.documentTitle}</div>
                   <div className="text-xs text-gray-500">{doc.documentType}</div>
@@ -147,7 +156,7 @@ function Documents() {
                 </div>
                 <a
                   href={`${API_URL}/api/documents/${doc.documentId}/download`}
-                  className="px-2 py-1 bg-[#4B3A2F] text-white rounded text-sm"
+                  className="px-2 py-1 bg-[#4B3A2F] text-white rounded text-sm hover:bg-[#3a2c24]"
                 >
                   Download
                 </a>

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import axios from "axios";
+import { API_URL } from "../config/constants"; // make sure this points to your backend
 
 const AuthContext = createContext(null);
 
@@ -23,9 +24,25 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  function login({ token, role, userId, fName, lName, profileImage }) {
+  /**
+   * Login function
+   * @param token - JWT token
+   * @param role - User role
+   * @param userId - User ID
+   * @param fName - First name
+   * @param lName - Last name
+   * @param picturePath - Backend picture path (e.g., "users/abc.png")
+   */
+  function login({ token, role, userId, fName, lName, picturePath }) {
+    // Construct full profile image URL if picturePath exists
+    const profileImage = picturePath
+      ? `${API_URL}/uploads/${picturePath}?t=${Date.now()}`
+      : null;
+
+    // Update auth state
     setAuth({ token, role, userId, fName, lName, profileImage });
 
+    // Persist to localStorage
     localStorage.setItem("token", token);
     localStorage.setItem("role", role);
     localStorage.setItem("userId", userId);

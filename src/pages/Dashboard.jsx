@@ -1,286 +1,148 @@
 // src/pages/Dashboard.jsx
-import axios from "axios";
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { API_URL } from "../config/constants";
 import { useAuth } from "../context/AuthProvider";
-import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 function Dashboard() {
   const { auth } = useAuth();
-
-  const [overview, setOverview] = useState(null);
-  const [userStats, setUserStats] = useState([]);
-  const [projectFeedbackCounts, setProjectFeedbackCounts] = useState([]);
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [selectedProjectFeedbacks, setSelectedProjectFeedbacks] = useState([]);
-  const [budgetDistribution, setBudgetDistribution] = useState([]);
-  const [projectStatus, setProjectStatus] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingBudget, setEditingBudget] = useState(false);
-  const [newTotalBudget, setNewTotalBudget] = useState(overview?.totalBudget || 0);
 
-  const COLORS = ["#8B5E3C", "#C4A484", "#6B8E23", "#D2B48C", "#A67B5B", "#7D5A50"];
-
-  const handleUpdateBudget = async () => {
-    try {
-      const res = await axios.put(`${API_URL}/api/budgets/${overview.budgetId}`, {
-        totalBudget: newTotalBudget
-      }, { headers: { Authorization: `Bearer ${auth.token}` } });
-
-      setOverview(prev => ({ ...prev, totalBudget: res.data.totalBudget }));
-      setEditingBudget(false);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update budget");
-    }
-  };
-
+  // --- Fetch projects and activities ---
   useEffect(() => {
     if (!auth?.token) return;
-    setLoading(true);
     const headers = { Authorization: `Bearer ${auth.token}` };
+    setLoading(true);
 
-    Promise.all([
-      axios.get(`${API_URL}/api/dashboard/overview`, { headers }),
-      axios.get(`${API_URL}/api/dashboard/budget-distribution`, { headers }),
-      axios.get(`${API_URL}/api/dashboard/project-status`, { headers }),
-      axios.get(`${API_URL}/api/dashboard/activities`, { headers }),
-      axios.get(`${API_URL}/api/dashboard/project-feedback`, { headers }),
-      axios.get(`${API_URL}/api/dashboard/users-by-status`, { headers })
-    ])
-      .then(([overviewRes, distRes, projRes, actRes, fbRes, usersRes]) => {
-        setOverview(overviewRes.data);
+    axios.get(`${API_URL}/api/projects`, { headers })
+      .then(res => setProjects(res.data))
+      .catch(console.error);
 
-        setBudgetDistribution(distRes.data.map(b => ({
-          sector: b.documentType || "Unknown",
-          amount: Number(b.approvedBudget || 0)
-        })));
-
-        // Prepare project status with allocated and spent
-        const projects = projRes.data.map(p => ({
-          ...p,
-          allocatedBudget: Number(p.allocatedBudget || 0),
-          spentBudget: Number(p.spentBudget || 0),
-          progress: Number(p.progress || 0)
-        }));
-        setProjectStatus(projects);
-
-        // Activities sorted by date
-        const acts = actRes.data.map(a => ({ ...a })).sort((a, b) => new Date(b.date) - new Date(a.date));
-        setActivities(acts);
-
-        // User stats
-        setUserStats(usersRes.data || []);
-
-        // Feedback summary
-        setProjectFeedbackCounts(fbRes.data);
-      })
-      .catch(err => console.error("Dashboard fetch error:", err))
+    axios.get(`${API_URL}/api/activities/recent`, { headers })
+      .then(res => setActivities(res.data))
+      .catch(console.error)
       .finally(() => setLoading(false));
-
   }, [auth]);
 
-  // Compute dynamic spent totals from activities
-  const totalSpentFromActivities = activities.reduce((sum, a) => sum + (Number(a.expenses) || 0), 0);
+  // --- Budget Calculations ---
+  const totalBudget = projects.reduce((sum, p) => sum + Number(p.allocatedBudget || 0), 0);
+  const totalSpent = projects.reduce((sum, p) => {
+    const spent = (p.activities || []).reduce((aSum, a) => aSum + Number(a.expenses || 0), 0);
+    return sum + spent;
+  }, 0);
+  const totalAvailable = totalBudget - totalSpent;
 
-  // Update projectStatus spentBudget dynamically
-  const projectStatusWithSpent = projectStatus.map(proj => {
-    const spentForProject = activities
-      .filter(a => a.projectId === proj.projectId)
-      .reduce((sum, a) => sum + (Number(a.expenses) || 0), 0);
+  // --- Active Projects ---
+  const activeProjects = projects.filter(p => p.projectStatus === "ONGOING");
 
-    return { ...proj, spentBudget: spentForProject };
+  // --- Budget Distribution (by type) ---
+  const budgetDistribution = [];
+  const typeMap = {};
+  projects.forEach(p => {
+    const type = p.projectType || "General";
+    if (!typeMap[type]) typeMap[type] = 0;
+    typeMap[type] += Number(p.allocatedBudget || 0);
   });
+  for (const type in typeMap) {
+    budgetDistribution.push({ type, amount: typeMap[type] });
+  }
 
-  // Fetch feedbacks for a project
-  const fetchFeedbacksByProject = async (projectId) => {
-    if (!auth?.token) return;
-    try {
-      const headers = { Authorization: `Bearer ${auth.token}` };
-      const response = await axios.get(`${API_URL}/api/dashboard/feedbacks/${projectId}`, { headers });
-      setSelectedProjectFeedbacks(response.data);
-      setSelectedProjectId(projectId);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const colors = ["#FF6404", "#4B3A2F", "#FFA500", "#8B4513", "#00BFFF"];
 
   return (
     <div className="p-8 min-h-screen bg-gray-50">
-      <h1 className="text-4xl font-bold text-[#4B3A2F] mb-6">Dashboard Overview</h1>
+      <h1 className="text-4xl font-bold mb-6 text-[#4B3A2F]">Dashboard</h1>
 
-      {/* Top summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h3 className="text-sm text-gray-500">Total Budget</h3>
-
-          <p className="text-2xl font-bold mt-2">
-            ₱{overview?.totalBudget?.toLocaleString() || "0"}
-          </p>
-          <div className="mt-2 flex items-center">
-            {editingBudget ? (
-              <>
-                <input
-                  type="number"
-                  value={newTotalBudget}
-                  onChange={e => setNewTotalBudget(Number(e.target.value))}
-                  className="border px-2 py-1 rounded w-32"
-                />
-                <button onClick={handleUpdateBudget} className="ml-2 px-2 py-1 bg-green-600 text-white rounded">Save</button>
-                <button onClick={() => setEditingBudget(false)} className="ml-2 px-2 py-1 bg-gray-300 rounded">Cancel</button>
-              </>
-            ) : (
-              <button onClick={() => setEditingBudget(true)} className="ml-2 px-2 py-1 bg-blue-600 text-white rounded">Edit</button>
-            )}
-          </div>
-
-          <div className="mt-1 text-xs text-gray-500">
-            Spent: ₱{totalSpentFromActivities.toLocaleString()}
-          </div>
-
-          <div className="mt-1 text-xs text-gray-500">
-            Remaining: ₱{overview ? (overview.totalBudget - totalSpentFromActivities).toLocaleString() : "0"}
-          </div>
+      {/* --- Budget Overview --- */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-xl font-semibold mb-2">Total Budget</h2>
+          <p className="text-2xl font-bold">₱{totalBudget.toLocaleString()}</p>
         </div>
-
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h3 className="text-sm text-gray-500">Active Projects</h3>
-          <p className="text-2xl font-bold mt-2">{overview ? overview.activeProjects : 0}</p>
-          <div className="mt-2 text-xs text-gray-500">
-            On-time: {overview?.onTimeProjects ?? 0} · Delayed: {overview?.delayedProjects ?? 0}
-          </div>
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-xl font-semibold mb-2">Total Spent</h2>
+          <p className="text-2xl font-bold">₱{totalSpent.toLocaleString()}</p>
         </div>
-
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h3 className="text-sm text-gray-500">User Stats</h3>
-          <p className="text-2xl font-bold mt-2">{userStats.reduce((acc, u) => acc + (u.count || 0), 0)}</p>
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-xl font-semibold mb-2">Total Available</h2>
+          <p className="text-2xl font-bold">₱{totalAvailable.toLocaleString()}</p>
         </div>
       </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
-        {/* Left column: Budget distribution chart */}
-        <div className="col-span-1 bg-white rounded-2xl shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Budget Distribution</h2>
-          <div className="h-64">
-            {budgetDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={budgetDistribution} dataKey="amount" nameKey="sector" innerRadius={40} outerRadius={80} paddingAngle={4}>
-                    {budgetDistribution.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={(value) => `₱${Number(value).toLocaleString()}`} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : loading ? <p>Loading...</p> : <p>No distribution data</p>}
-          </div>
-        </div>
-
-        {/* Middle column: Project status table */}
-        <div className="col-span-1 bg-white rounded-2xl shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Project Status</h2>
-          <div className="max-h-96 overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-white">
-                <tr className="text-left text-gray-500">
-                  <th className="p-2">Project</th>
-                  <th className="p-2">Allocated</th>
-                  <th className="p-2">Spent</th>
-                  <th className="p-2">Progress</th>
-                  <th className="p-2">Status</th>
-                  <th className="p-2">Due</th>
+      {/* --- Project Status Table --- */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-6 overflow-x-auto">
+        <h2 className="text-2xl font-semibold mb-4">Project Status</h2>
+        <table className="min-w-full text-left">
+          <thead>
+            <tr className="border-b">
+              <th className="p-2">Project Name</th>
+              <th className="p-2">Allocated Budget</th>
+              <th className="p-2">Spent</th>
+              <th className="p-2">Progress</th>
+              <th className="p-2">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map(p => {
+              const spent = (p.activities || []).reduce((sum, a) => sum + Number(a.expenses || 0), 0);
+              const progress = ((spent / (p.allocatedBudget || 1)) * 100).toFixed(1);
+              return (
+                <tr key={p.projectId} className="border-b">
+                  <td className="p-2">{p.projectName}</td>
+                  <td className="p-2">₱{Number(p.allocatedBudget).toLocaleString()}</td>
+                  <td className="p-2">₱{spent.toLocaleString()}</td>
+                  <td className="p-2">{progress}%</td>
+                  <td className="p-2">{p.projectStatus}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {projectStatusWithSpent.length > 0 ? projectStatusWithSpent.map((p, i) => {
-                  const allocated = Number(p.allocatedBudget || 0);
-                  const spent = Number(p.spentBudget || 0);
-                  const progressPercentage = overview?.totalBudget
-                    ? Math.min(100, (spent / overview.totalBudget) * 100)
-                    : allocated > 0
-                      ? Math.min(100, (spent / allocated) * 100)
-                      : 0;
-
-                  return (
-                    <tr key={i} className="border-b last:border-b-0">
-                      <td className="p-2">{p.projectName}</td>
-                      <td className="p-2">₱{allocated.toLocaleString()}</td>
-                      <td className="p-2">₱{spent.toLocaleString()}</td>
-                      <td className="p-2">{progressPercentage.toFixed(2)}%</td>
-                      <td className="p-2">{p.status}</td>
-                      <td className="p-2">{p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "-"}</td>
-                    </tr>
-                  );
-                }) : loading ? <tr><td colSpan="6" className="p-4">Loading...</td></tr> : <tr><td colSpan="6" className="p-4">No projects</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Right column: Activities & Feedback */}
-        <div className="col-span-1 space-y-6">
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Recent Activities</h2>
-            <ul className="space-y-3 max-h-64 overflow-auto">
-              {activities.length > 0 ? activities.map((a, i) => (
-                <li key={i} className="p-3 border rounded">
-                  <div className="flex justify-between">
-                    <div className="font-semibold">{a.activityName}</div>
-                    <div className="text-xs text-gray-400">{a.date}</div>
-                  </div>
-                  <div className="text-sm text-gray-600">{a.description}</div>
-                  <div className="text-xs text-gray-500 mt-1">{a.projectName ? `Project: ${a.projectName}` : ""}</div>
-                  <div className="text-xs text-gray-500 mt-1">Expense: ₱{Number(a.expenses || 0).toLocaleString()}</div>
-                </li>
-              )) : loading ? <p>Loading...</p> : <p>No activities</p>}
-            </ul>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Project Feedbacks</h2>
-            {projectFeedbackCounts.length > 0 ? (
-              <ul className="space-y-2 max-h-64 overflow-auto">
-                {projectFeedbackCounts.map((p, i) => (
-                  <li key={i} className="flex items-center justify-between p-2 border rounded hover:bg-gray-50">
-                    <div>
-                      <div className="font-medium">{p.projectName}</div>
-                      <div className="text-xs text-gray-500">{p.feedbackCount} feedbacks</div>
-                    </div>
-                    <button
-                      className="px-2 py-1 bg-[#4B3A2F] text-white rounded"
-                      onClick={() => fetchFeedbacksByProject(p.projectId)}
-                    >View</button>
-                  </li>
-                ))}
-              </ul>
-            ) : loading ? <p>Loading...</p> : <p>No feedback summary</p>}
-          </div>
-        </div>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* Feedback details */}
-      {selectedProjectId && (
-        <div className="bg-white rounded-2xl shadow p-6 mt-6">
-          <div className="flex justify-between items-start">
-            <h3 className="text-lg font-semibold mb-2 text-[#4B3A2F]">Feedbacks for Project</h3>
-            <button onClick={() => { setSelectedProjectId(null); setSelectedProjectFeedbacks([]); }} className="text-sm text-gray-500">Close</button>
-          </div>
-
-          {selectedProjectFeedbacks.length > 0 ? (
-            <ul className="space-y-2 max-h-64 overflow-y-auto">
-              {selectedProjectFeedbacks.map((f, i) => (
-                <li key={i} className="p-2 border rounded">
-                  <p className="text-sm"><strong>{f.user?.fName ? `${f.user.fName} ${f.user.lName ?? ""}` : "Anonymous"}:</strong> {f.content}</p>
-                  <p className="text-xs text-gray-400">{new Date(f.uploadDate).toLocaleString()}</p>
-                </li>
+      {/* --- Budget Distribution --- */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-6">
+        <h2 className="text-2xl font-semibold mb-4">Budget Distribution</h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={budgetDistribution} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <XAxis dataKey="type" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="amount">
+              {budgetDistribution.map((entry, index) => (
+                <Cell key={index} fill={colors[index % colors.length]} />
               ))}
-            </ul>
-          ) : <p className="text-sm text-gray-500">No feedbacks for this project.</p>}
-        </div>
-      )}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* --- Recent Activities --- */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-6">
+        <h2 className="text-2xl font-semibold mb-4">Recent Activities</h2>
+        {activities.length === 0 ? (
+          <p>No recent activities.</p>
+        ) : (
+          <ul className="space-y-2">
+            {activities.map(a => (
+              <li key={a.activityId} className="border-b p-2">
+                <p className="font-semibold">{a.activityName}</p>
+                <p className="text-sm">{a.description}</p>
+                <p className="text-xs text-gray-500">{new Date(a.date).toLocaleDateString()} - ₱{a.expenses}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* --- Active Projects --- */}
+      <div className="bg-white p-6 rounded-2xl shadow">
+        <h2 className="text-2xl font-semibold mb-4">Active Projects</h2>
+        <p className="text-xl font-bold">{activeProjects.length}</p>
+      </div>
     </div>
   );
 }

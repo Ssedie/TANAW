@@ -51,11 +51,11 @@ const Settings = () => {
             const data = await response.json();
             console.log("Fetched user data:", data);
             setUserData({
-                userId: data.id || "",
+                userId: data.userId || "",
                 email: data.email || "",
-                fName: data.fName || "",
-                mName: data.mName || "",
-                lName: data.lName || "",
+                fName: data.fname || "",
+                mName: data.mname || "",
+                lName: data.lname || "",
                 street: data.street || "",
                 barangay: data.barangay || "",
                 city: data.city || "",

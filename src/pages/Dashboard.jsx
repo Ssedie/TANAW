@@ -8,9 +8,8 @@ import {
 } from "recharts";
 
 function Dashboard() {
-  const { auth } = useAuth(); // get token from context
+  const { auth } = useAuth();
 
-  // States
   const [overview, setOverview] = useState(null);
   const [userStats, setUserStats] = useState([]);
   const [projectFeedbackCounts, setProjectFeedbackCounts] = useState([]);
@@ -20,8 +19,24 @@ function Dashboard() {
   const [projectStatus, setProjectStatus] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [newTotalBudget, setNewTotalBudget] = useState(overview?.totalBudget || 0);
 
   const COLORS = ["#8B5E3C", "#C4A484", "#6B8E23", "#D2B48C", "#A67B5B", "#7D5A50"];
+
+  const handleUpdateBudget = async () => {
+    try {
+      const res = await axios.put(`${API_URL}/api/budgets/${overview.budgetId}`, {
+        totalBudget: newTotalBudget
+      }, { headers: { Authorization: `Bearer ${auth.token}` } });
+
+      setOverview(prev => ({ ...prev, totalBudget: res.data.totalBudget }));
+      setEditingBudget(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update budget");
+    }
+  };
 
   useEffect(() => {
     if (!auth?.token) return;
@@ -37,41 +52,50 @@ function Dashboard() {
       axios.get(`${API_URL}/api/dashboard/users-by-status`, { headers })
     ])
       .then(([overviewRes, distRes, projRes, actRes, fbRes, usersRes]) => {
-        // Overview
         setOverview(overviewRes.data);
 
-        // Budget distribution (optional, per project or sector)
         setBudgetDistribution(distRes.data.map(b => ({
           sector: b.documentType || "Unknown",
           amount: Number(b.approvedBudget || 0)
         })));
 
-        // Project status
-        setProjectStatus(projRes.data.map(p => ({
+        // Prepare project status with allocated and spent
+        const projects = projRes.data.map(p => ({
           ...p,
           allocatedBudget: Number(p.allocatedBudget || 0),
           spentBudget: Number(p.spentBudget || 0),
           progress: Number(p.progress || 0)
-        })));
+        }));
+        setProjectStatus(projects);
 
-        // Activities
-        setActivities(actRes.data
-          .map(a => ({ ...a }))
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-        );
-
-        // Feedback summary
-        setProjectFeedbackCounts(fbRes.data);
+        // Activities sorted by date
+        const acts = actRes.data.map(a => ({ ...a })).sort((a, b) => new Date(b.date) - new Date(a.date));
+        setActivities(acts);
 
         // User stats
         setUserStats(usersRes.data || []);
+
+        // Feedback summary
+        setProjectFeedbackCounts(fbRes.data);
       })
       .catch(err => console.error("Dashboard fetch error:", err))
       .finally(() => setLoading(false));
 
   }, [auth]);
 
-  // Fetch feedbacks for a specific project
+  // Compute dynamic spent totals from activities
+  const totalSpentFromActivities = activities.reduce((sum, a) => sum + (Number(a.expenses) || 0), 0);
+
+  // Update projectStatus spentBudget dynamically
+  const projectStatusWithSpent = projectStatus.map(proj => {
+    const spentForProject = activities
+      .filter(a => a.projectId === proj.projectId)
+      .reduce((sum, a) => sum + (Number(a.expenses) || 0), 0);
+
+    return { ...proj, spentBudget: spentForProject };
+  });
+
+  // Fetch feedbacks for a project
   const fetchFeedbacksByProject = async (projectId) => {
     if (!auth?.token) return;
     try {
@@ -92,14 +116,33 @@ function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-2xl shadow p-6">
           <h3 className="text-sm text-gray-500">Total Budget</h3>
+
           <p className="text-2xl font-bold mt-2">
-            ₱{overview ? Number(overview.totalBudget || 0).toLocaleString() : "0"}
+            ₱{overview?.totalBudget?.toLocaleString() || "0"}
           </p>
-          <div className="mt-1 text-xs text-gray-500">
-            Spent: ₱{overview ? Number(overview.totalSpent || 0).toLocaleString() : "0"}
+          <div className="mt-2 flex items-center">
+            {editingBudget ? (
+              <>
+                <input
+                  type="number"
+                  value={newTotalBudget}
+                  onChange={e => setNewTotalBudget(Number(e.target.value))}
+                  className="border px-2 py-1 rounded w-32"
+                />
+                <button onClick={handleUpdateBudget} className="ml-2 px-2 py-1 bg-green-600 text-white rounded">Save</button>
+                <button onClick={() => setEditingBudget(false)} className="ml-2 px-2 py-1 bg-gray-300 rounded">Cancel</button>
+              </>
+            ) : (
+              <button onClick={() => setEditingBudget(true)} className="ml-2 px-2 py-1 bg-blue-600 text-white rounded">Edit</button>
+            )}
           </div>
+
           <div className="mt-1 text-xs text-gray-500">
-            Remaining: ₱{overview ? Number(overview.totalBudget - overview.totalSpent || 0).toLocaleString() : "0"}
+            Spent: ₱{totalSpentFromActivities.toLocaleString()}
+          </div>
+
+          <div className="mt-1 text-xs text-gray-500">
+            Remaining: ₱{overview ? (overview.totalBudget - totalSpentFromActivities).toLocaleString() : "0"}
           </div>
         </div>
 
@@ -144,35 +187,6 @@ function Dashboard() {
               <thead className="sticky top-0 bg-white">
                 <tr className="text-left text-gray-500">
                   <th className="p-2">Project</th>
-                  <th className="p-2">Budget</th>
-                  <th className="p-2">Spent</th>
-                  <th className="p-2">Progress</th>
-                  <th className="p-2">Status</th>
-                  <th className="p-2">Due</th>
-                </tr>
-              </thead>
-              <tbody>
-                {projectStatus.length > 0 ? projectStatus.map((p, i) => (
-                  <tr key={i} className="border-b last:border-b-0">
-                    <td className="p-2">{p.projectName}</td>
-                    <td className="p-2">₱{Number(p.allocatedBudget || 0).toLocaleString()}</td>
-                    <td className="p-2">₱{Number(p.spentBudget || 0).toLocaleString()}</td>
-                    <td className="p-2">{p.progress.toFixed(2)}%</td>
-                    <td className="p-2">{p.status}</td>
-                    <td className="p-2">{p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "-"}</td>
-                  </tr>
-                )) : loading ? <tr><td colSpan="6" className="p-4">Loading...</td></tr> : <tr><td colSpan="6" className="p-4">No projects</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </div>{/* Middle column: project status table */}
-        <div className="col-span-1 bg-white rounded-2xl shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Project Status</h2>
-          <div className="max-h-96 overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-white">
-                <tr className="text-left text-gray-500">
-                  <th className="p-2">Project</th>
                   <th className="p-2">Allocated</th>
                   <th className="p-2">Spent</th>
                   <th className="p-2">Progress</th>
@@ -181,8 +195,7 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {projectStatus.length > 0 ? projectStatus.map((p, i) => {
-                  // Compute progress relative to total budget
+                {projectStatusWithSpent.length > 0 ? projectStatusWithSpent.map((p, i) => {
                   const allocated = Number(p.allocatedBudget || 0);
                   const spent = Number(p.spentBudget || 0);
                   const progressPercentage = overview?.totalBudget
@@ -207,7 +220,6 @@ function Dashboard() {
           </div>
         </div>
 
-
         {/* Right column: Activities & Feedback */}
         <div className="col-span-1 space-y-6">
           <div className="bg-white rounded-2xl shadow p-6">
@@ -221,6 +233,7 @@ function Dashboard() {
                   </div>
                   <div className="text-sm text-gray-600">{a.description}</div>
                   <div className="text-xs text-gray-500 mt-1">{a.projectName ? `Project: ${a.projectName}` : ""}</div>
+                  <div className="text-xs text-gray-500 mt-1">Expense: ₱{Number(a.expenses || 0).toLocaleString()}</div>
                 </li>
               )) : loading ? <p>Loading...</p> : <p>No activities</p>}
             </ul>

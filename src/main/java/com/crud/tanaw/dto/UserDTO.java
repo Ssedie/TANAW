@@ -2,8 +2,10 @@ package com.crud.tanaw.dto;
 
 import com.crud.tanaw.entities.User;
 import jakarta.validation.constraints.*;
+import org.springframework.cglib.core.Local;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 public class UserDTO {
@@ -57,14 +59,15 @@ public class UserDTO {
 
     @NotNull(message = "Birthdate is required")
     @Past(message = "Birthdate must be in the past")
-    private Date birthDate;
+    private LocalDate birthDate;
+    private String accountStatus;
 
     private String picturePath;
 
     public UserDTO(Integer userId, String fName, String mName, String lName, String email,
                    String role, String phoneNumber, String street, String barangay,
                    String city, String province, String region, String country,
-                   Integer zipCode, Date birthDate, String picturePath) {
+                   Integer zipCode, LocalDate birthDate, String picturePath, String accountStatus) {
         this.userId = userId;
         this.fName = fName;
         this.mName = mName;
@@ -81,6 +84,7 @@ public class UserDTO {
         this.zipCode = zipCode;
         this.birthDate = birthDate;
         this.picturePath = picturePath;
+        this.accountStatus = accountStatus;
     }
 
 
@@ -196,11 +200,11 @@ public class UserDTO {
         this.zipCode = zipCode;
     }
 
-    public Date getBirthDate() {
+    public LocalDate getBirthDate() {
         return birthDate;
     }
 
-    public void setBirthDate(Date birthDate) {
+    public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
     }
 
@@ -210,5 +214,13 @@ public class UserDTO {
 
     public void setPicture(String picturePath) {
         this.picturePath = picturePath;
+    }
+
+    public String getAccountStatus() {
+        return accountStatus;
+    }
+
+    public void setAccountStatus(String accountStatus) {
+        this.accountStatus = accountStatus;
     }
 }

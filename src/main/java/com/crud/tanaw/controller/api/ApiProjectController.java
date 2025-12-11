@@ -1,5 +1,6 @@
 package com.crud.tanaw.controller.api;
 
+import com.crud.tanaw.dto.ActivityDTO;
 import com.crud.tanaw.dto.ProjectDTO;
 import com.crud.tanaw.entities.Document;
 import com.crud.tanaw.entities.Project;
@@ -7,6 +8,7 @@ import com.crud.tanaw.entities.User;
 import com.crud.tanaw.repositories.DocumentRepository;
 import com.crud.tanaw.repositories.ProjectRepository;
 import com.crud.tanaw.repositories.UserRepository;
+import com.crud.tanaw.utility.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.constraints.NotBlank;
+
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,14 +56,11 @@ public class ApiProjectController {
             @RequestParam @NotBlank(message = "Project status is required") String projectStatus,
             @RequestParam(required = false) String feedback,
             @RequestParam(required = false) MultipartFile document,
-            @RequestParam Long userId
+            @RequestParam Long userId,
+            Authentication auth
     ) {
         try {
-
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String role = auth.getAuthorities().iterator().next().getAuthority();
-
-            if (!role.equals("ADMIN")) {
+            if (!SecurityUtil.isAdmin(auth)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body("Only admins can create projects.");
             }
@@ -90,7 +91,6 @@ public class ApiProjectController {
             }
 
             Project savedProject = projectRepository.save(project);
-
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(savedProject));
 
         } catch (Exception e) {
@@ -98,6 +98,8 @@ public class ApiProjectController {
                     .body("Error creating project: " + e.getMessage());
         }
     }
+
+    private static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MM-dd");
 
     // --- Helper: Convert Project entity to DTO ---
     private ProjectDTO convertToDTO(Project p) {
@@ -109,6 +111,32 @@ public class ApiProjectController {
         dto.setProjectStatus(p.getProjectStatus());
         dto.setFeedback(p.getFeedback());
         dto.setDocumentId(p.getDocument() != null ? p.getDocument().getDocumentId() : null);
+
+        // --- NEW: map activities ---
+        if (p.getActivities() != null) {
+            dto.setActivities(
+                    p.getActivities().stream()
+                            .map(a -> {
+                                ActivityDTO aDto = new ActivityDTO();
+                                aDto.setActivityId(a.getActivityId());
+                                aDto.setActivityName(a.getActivityName());
+                                aDto.setDescription(a.getDescription());
+                                if (a.getDate() != null) {
+                                    aDto.setDate(DATE_FMT.format(a.getDate()));
+                                } else {
+                                    aDto.setDate(null);
+                                }
+                                aDto.setStatus(a.getStatus());
+                                aDto.setExpenses(a.getExpenses());
+                                aDto.setProjectId(p.getProjectId());
+                                aDto.setProjectName(p.getProjectName());
+                                aDto.setType(a.getType());
+                                return aDto;
+                            })
+                            .collect(Collectors.toList())
+            );
+        }
+
         return dto;
     }
 }

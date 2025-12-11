@@ -4,7 +4,9 @@ import com.crud.tanaw.dto.UserDTO;
 import com.crud.tanaw.dto.ReqRep.UpdateProfileRequest;
 import com.crud.tanaw.entities.User;
 import com.crud.tanaw.services.UserService;
+import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,14 +21,22 @@ public class ApiUserController {
 
     @GetMapping("/profile")
     public UserDTO getProfile(Authentication authentication) {
-        Long userId = Long.valueOf(authentication.getName()); // make sure this is userId
-        User user = userService.findByUserId(userId);
+        Long userId = Long.valueOf(authentication.getName());
+        User user = userService.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         return mapToDTO(user);
     }
 
     @PutMapping(value ="/profile", consumes = "multipart/form-data")
-    public UserDTO updateProfile(@ModelAttribute UpdateProfileRequest request,
-                                 Authentication authentication) {
+    public UserDTO updateProfile(
+            @ModelAttribute @Valid UpdateProfileRequest request,
+            BindingResult bindingResult,
+            Authentication authentication) {
+
+        if (bindingResult.hasErrors()) {
+            throw new RuntimeException("Validation failed: " + bindingResult.getAllErrors());
+        }
+
         Long userId = Long.valueOf(authentication.getName());
         User updatedUser = userService.updateUserProfile(userId, request);
         return mapToDTO(updatedUser);
@@ -49,8 +59,8 @@ public class ApiUserController {
                 user.getCountry(),
                 user.getZipCode(),
                 user.getBirthDate(),
-                user.getPicturePath()
+                user.getPicturePath(),
+                user.getAccountStatus()
         );
     }
 }
-

@@ -33,6 +33,8 @@ public class Project {
     @JsonBackReference
     private Document document;
 
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_id")
     @JsonBackReference
@@ -41,6 +43,9 @@ public class Project {
     @OneToMany(mappedBy = "project")
     @JsonManagedReference
     private List<Feedback> feedbacks = new ArrayList<>();
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Activity> activities;
 
     // --- Getters & Setters ---
     public Integer getProjectId() { return projectId; }
@@ -75,4 +80,12 @@ public class Project {
 
     public List<Feedback> getFeedbacks() { return feedbacks; }
     public void setFeedbacks(List<Feedback> feedbacks) { this.feedbacks = feedbacks; }
+
+    public List<Activity> getActivities() {
+        return activities;
+    }
+
+    public void setActivities(List<Activity> activities) {
+        this.activities = activities;
+    }
 }

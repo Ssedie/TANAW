@@ -42,43 +42,46 @@ public class ApiAuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody AuthRequest request) {
 
-        // 1️⃣ Special case: SUPER ADMIN login
+        // Super Admin login
         if (Integer.valueOf(request.user_id()).equals(superAdminId)) {
             if (!request.password().equals(superAdminPassword)) {
                 throw new BadCredentialsException("Incorrect User Id or Password");
             }
 
-            // Create an Authentication object for the super admin
-            Authentication superAdminAuth = new UsernamePasswordAuthenticationToken(
-                    superAdminId.toString(),
-                    null,
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
-            );
-
             String token = jwtTokenService.generateToken(superAdminId.longValue(), "ADMIN");
             Long expiresAt = jwtTokenService.extractExpirationTime(token);
 
-            return new AuthResponse(token, superAdminId, expiresAt, "ADMIN","Super", "Admin" );
+            return new AuthResponse(token, superAdminId, expiresAt, "ADMIN", "Super", "Admin", null);
         }
 
-        // 2️⃣ Normal user login
+        // Normal user login
+        Long userId = Long.valueOf(request.user_id());
+
+        // 1️⃣ Fetch user safely
+        User user = userService.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2️⃣ Authenticate
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        String.valueOf(request.user_id()),
+                        String.valueOf(userId),
                         request.password()
                 )
         );
 
+        // 3️⃣ Generate JWT token
         String token = jwtTokenService.generateToken(authentication);
         Long expiresAt = jwtTokenService.extractExpirationTime(token);
-
-        User user = userService.findByUserId(Long.valueOf(request.user_id()));
 
         String fName = user.getFName() != null ? user.getFName() : "";
         String lName = user.getLName() != null ? user.getLName() : "";
 
-        return new AuthResponse(token, user.getUserId(), expiresAt, user.getRole(), fName, lName);
+        String picturePath = user.getPicturePath();
+
+        return new AuthResponse(token, user.getUserId(), expiresAt, user.getRole(), fName, lName, picturePath);
     }
+
+
 
     @PostMapping("/register")
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
@@ -126,7 +129,8 @@ public class ApiAuthController {
                 expiresAt,
                 savedUser.getRole(),
                 savedUser.getFName(),
-                savedUser.getLName()
+                savedUser.getLName(),
+                savedUser.getAccountStatus()
         );
     }
 

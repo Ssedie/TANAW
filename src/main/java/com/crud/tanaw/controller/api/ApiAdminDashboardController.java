@@ -2,13 +2,11 @@ package com.crud.tanaw.controller.api;
 
 import com.crud.tanaw.entities.User;
 import com.crud.tanaw.repositories.UserRepository;
-import com.crud.tanaw.services.CustomUserDetails;
+import com.crud.tanaw.utility.SecurityUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,22 +16,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ApiAdminDashboardController {
 
-    @Value("${app.super-admin-id}")
-    private Integer superAdminId;
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     // Only super admin can get all users
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers(Authentication auth) {
-        // Extract JWT claims
-        Jwt jwt = (Jwt) auth.getPrincipal();
-        Integer currentUserId = Integer.valueOf(jwt.getSubject());
-        String role = jwt.getClaimAsString("role");
-
-        // Only allow ADMIN
-        if (!"ADMIN".equals(role)) {
+        if (!SecurityUtil.isAdmin(auth)) {
             return ResponseEntity.status(403).body("Forbidden");
         }
 
@@ -48,11 +37,7 @@ public class ApiAdminDashboardController {
             @RequestParam String role,
             Authentication auth
     ) {
-        Jwt jwt = (Jwt) auth.getPrincipal();
-        Integer currentUserId = Integer.valueOf(jwt.getSubject());
-        String currentUserRole = jwt.getClaimAsString("role");
-
-        if (!"ADMIN".equals(currentUserRole)) {
+        if (!SecurityUtil.isAdmin(auth)) {
             return ResponseEntity.status(403).body("Forbidden");
         }
 
@@ -72,18 +57,13 @@ public class ApiAdminDashboardController {
             @RequestBody User updatedUser,
             Authentication auth
     ) {
-        Jwt jwt = (Jwt) auth.getPrincipal();
-        Integer currentUserId = Integer.valueOf(jwt.getSubject());
-        String role = jwt.getClaimAsString("role");
-
-        if (!"ADMIN".equals(role)) {
+        if (!SecurityUtil.isAdmin(auth)) {
             return ResponseEntity.status(403).body("Forbidden");
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Update fields
         user.setFName(updatedUser.getFName());
         user.setMName(updatedUser.getMName());
         user.setLName(updatedUser.getLName());
@@ -110,11 +90,7 @@ public class ApiAdminDashboardController {
             @RequestParam String newPassword,
             Authentication auth
     ) {
-        Jwt jwt = (Jwt) auth.getPrincipal();
-        Integer currentUserId = Integer.valueOf(jwt.getSubject());
-        String role = jwt.getClaimAsString("role");
-
-        if (!"ADMIN".equals(role)) {
+        if (!SecurityUtil.isAdmin(auth)) {
             return ResponseEntity.status(403).body("Forbidden");
         }
 
@@ -134,9 +110,7 @@ public class ApiAdminDashboardController {
             @RequestParam String newPassword,
             Authentication auth
     ) {
-        Jwt jwt = (Jwt) auth.getPrincipal();
-        Integer currentUserId = Integer.valueOf(jwt.getSubject());
-        String role = jwt.getClaimAsString("role");
+        Integer currentUserId = SecurityUtil.getCurrentUserId(auth);
 
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));

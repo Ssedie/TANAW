@@ -2,8 +2,10 @@ package com.crud.tanaw.dto.ReqRep;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 public record UpdateProfileRequest(
@@ -32,6 +34,7 @@ public record UpdateProfileRequest(
         String password,           // optional for update
         String role,               // optional for update
         String phoneNumber,        // optional for update
-        Date birthDate,
+        @DateTimeFormat(pattern = "yyyy-MM-dd")
+        LocalDate birthDate,
         MultipartFile picture// nullable for update
 ) {}

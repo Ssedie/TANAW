@@ -93,18 +93,23 @@ public class SecurityConfig {
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher(request -> !request.getRequestURI().startsWith("/api"))
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/register", "/images/**", "/login").permitAll()
-                        .anyRequest().authenticated())
-                .formLogin(login -> login
-                        .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
-                        .permitAll())
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll())
+                        // Allow all frontend requests
+                        .requestMatchers(
+                                "/",
+                                "/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/uploads/**",
+                                "/login",
+                                "/register"
+                        ).permitAll()
+                        .anyRequest().permitAll() // IMPORTANT
+                )
+                .formLogin(login -> login.disable())  // Disable MVC login page
+                .logout(logout -> logout.disable())   // Disable logout for frontend
                 .build();
     }
 }

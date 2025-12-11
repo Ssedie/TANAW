@@ -19,7 +19,7 @@ public class ActivityDTO {
     @NotBlank(message = "Please provide a valid status for the activity.")
     private String status;
 
-    @NotBlank(message = "Please provide the exact expense for the activity.")
+    @NotNull(message = "Please provide the exact expense for the activity.")
     private Double expenses;
 
     @NotNull(message = "Project ID must not be empty.")
@@ -27,11 +27,13 @@ public class ActivityDTO {
 
     @NotBlank(message = "Project name must not be empty.")
     private String projectName;
+    @NotBlank(message = "Type must not be empty")
+    private String type;
 
     public ActivityDTO() {}
 
     public ActivityDTO(Integer activityId, String activityName, String description, java.util.Date date,
-                       String status, Double expenses, Integer projectId) {
+                       String status, Double expenses, Integer projectId, String projectName,String type) {
         this.activityId = activityId;
         this.activityName = activityName;
         this.description = description;
@@ -39,6 +41,8 @@ public class ActivityDTO {
         this.status = status;
         this.expenses = expenses;
         this.projectId = projectId;
+        this.projectName = projectName;
+        this.type = type;
     }
 
     public Integer getActivityId() {
@@ -103,5 +107,13 @@ public class ActivityDTO {
 
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

@@ -17,6 +17,7 @@ public class Activity {
     private Date date;
     private String status;
     private Double expenses;
+    private String type;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
@@ -92,5 +93,13 @@ public class Activity {
 
     public void setProjectHead(User projectHead) {
         this.projectHead = projectHead;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

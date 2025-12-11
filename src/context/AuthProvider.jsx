@@ -5,31 +5,33 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(null);
-  const [loading, setLoading] = useState(true); // loading state for initial check
+  const [loading, setLoading] = useState(true);
 
-  // Check localStorage on first render
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     const userId = localStorage.getItem("userId");
     const fName = localStorage.getItem("fName") || "";
     const lName = localStorage.getItem("lName") || "";
+    const profileImage = localStorage.getItem("profileImage") || null;
+
     if (token && role && userId) {
-      setAuth({ token, role, userId, fName, lName });
+      setAuth({ token, role, userId, fName, lName, profileImage });
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
 
-    setLoading(false); // done checking
+    setLoading(false);
   }, []);
 
-  function login({ token, role, userId, fName, lName }) {
-    setAuth({ token, role, userId, fName, lName });
+  function login({ token, role, userId, fName, lName, profileImage }) {
+    setAuth({ token, role, userId, fName, lName, profileImage });
 
     localStorage.setItem("token", token);
     localStorage.setItem("role", role);
     localStorage.setItem("userId", userId);
     localStorage.setItem("fName", fName);
     localStorage.setItem("lName", lName);
+    if (profileImage) localStorage.setItem("profileImage", profileImage);
 
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   }
@@ -41,17 +43,17 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("userId");
     localStorage.removeItem("fName");
     localStorage.removeItem("lName");
+    localStorage.removeItem("profileImage");
     delete axios.defaults.headers.common["Authorization"];
   }
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout, loading }}>
+    <AuthContext.Provider value={{ auth, setAuth, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook for easy access
 export function useAuth() {
   return useContext(AuthContext);
 }

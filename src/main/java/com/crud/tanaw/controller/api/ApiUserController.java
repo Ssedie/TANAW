@@ -24,8 +24,8 @@ public class ApiUserController {
         return mapToDTO(user);
     }
 
-    @PutMapping("/profile")
-    public UserDTO updateProfile(@RequestBody UpdateProfileRequest request,
+    @PutMapping(value ="/profile", consumes = "multipart/form-data")
+    public UserDTO updateProfile(@ModelAttribute UpdateProfileRequest request,
                                  Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
         User updatedUser = userService.updateUserProfile(userId, request);
@@ -48,7 +48,8 @@ public class ApiUserController {
                 user.getRegion(),
                 user.getCountry(),
                 user.getZipCode(),
-                user.getBirthDate()
+                user.getBirthDate(),
+                user.getPicturePath()
         );
     }
 }

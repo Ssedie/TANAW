@@ -1,35 +1,70 @@
 package com.crud.tanaw.dto;
 
 import com.crud.tanaw.entities.User;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
 
 public class UserDTO {
 
     private Integer userId;
+
+    @NotBlank(message = "First name is required")
+    @Size(max = 50, message = "First name must not exceed 50 characters")
     private String fName;
+
+    @Size(max = 50, message = "Middle name must not exceed 50 characters")
     private String mName;
+
+    @NotBlank(message = "Last name is required")
+    @Size(max = 50, message = "Last name must not exceed 50 characters")
     private String lName;
+
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email format is invalid")
     private String email;
+
+    @NotBlank(message = "Role is required")
     private String role;
+
+    @NotBlank(message = "Phone number is required")
+    @Pattern(regexp = "^[0-9]{10,15}$", message = "Phone number must be 10–15 digits")
     private String phoneNumber;
+
+    @NotBlank(message = "Street is required")
     private String street;
+
+    @NotBlank(message = "Barangay is required")
     private String barangay;
+
+    @NotBlank(message = "City is required")
     private String city;
+
+    @NotBlank(message = "Province is required")
     private String province;
+
+    @NotBlank(message = "Region is required")
     private String region;
+
+    @NotBlank(message = "Country is required")
     private String country;
-    private Integer zipCode;      // String to keep leading zeros
+
+    @NotNull(message = "Zip code is required")
+    @Min(value = 100, message = "Zip code must be at least 3 digits")
+    @Max(value = 9999, message = "Zip code must not exceed 4 digits")
+    private Integer zipCode;
+
+    @NotNull(message = "Birthdate is required")
+    @Past(message = "Birthdate must be in the past")
     private Date birthDate;
+
+    private String picturePath;
 
     public UserDTO(Integer userId, String fName, String mName, String lName, String email,
                    String role, String phoneNumber, String street, String barangay,
                    String city, String province, String region, String country,
-                   Integer zipCode, Date birthDate) {
+                   Integer zipCode, Date birthDate, String picturePath) {
         this.userId = userId;
         this.fName = fName;
         this.mName = mName;
@@ -45,38 +80,39 @@ public class UserDTO {
         this.country = country;
         this.zipCode = zipCode;
         this.birthDate = birthDate;
+        this.picturePath = picturePath;
     }
 
 
-    public Integer getId() {
+    public Integer getUserId() {
         return userId;
     }
 
-    public void setId(Integer userId) {
+    public void setUserId(Integer userId) {
         this.userId = userId;
     }
 
-    public String getfName() {
+    public String getFName() {
         return fName;
     }
 
-    public void setfName(String fName) {
+    public void setFName(String fName) {
         this.fName = fName;
     }
 
-    public String getmName() {
+    public String getMName() {
         return mName;
     }
 
-    public void setmName(String mName) {
+    public void setMName(String mName) {
         this.mName = mName;
     }
 
-    public String getlName() {
+    public String getLName() {
         return lName;
     }
 
-    public void setlName(String lName) {
+    public void setLName(String lName) {
         this.lName = lName;
     }
 
@@ -166,5 +202,13 @@ public class UserDTO {
 
     public void setBirthDate(Date birthDate) {
         this.birthDate = birthDate;
+    }
+
+    public String getPicturePath() {
+        return picturePath;
+    }
+
+    public void setPicture(String picturePath) {
+        this.picturePath = picturePath;
     }
 }

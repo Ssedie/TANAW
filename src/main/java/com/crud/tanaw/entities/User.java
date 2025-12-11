@@ -17,6 +17,8 @@ public class User {
     @Id
     private Integer userId;
 
+    @Column(name = "picture_path")
+    private String picturePath;
     private String fName;
     private String mName;
     private String lName;
@@ -145,5 +147,13 @@ public class User {
 
     public void setProvince(String province) {
         this.province = province;
+    }
+
+    public String getPicturePath() {
+        return picturePath;
+    }
+
+    public void setPicturePath(String picturePath) {
+        this.picturePath = picturePath;
     }
 }

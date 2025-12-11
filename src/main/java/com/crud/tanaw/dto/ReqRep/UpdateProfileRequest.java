@@ -2,6 +2,7 @@ package com.crud.tanaw.dto.ReqRep;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
 
@@ -31,5 +32,6 @@ public record UpdateProfileRequest(
         String password,           // optional for update
         String role,               // optional for update
         String phoneNumber,        // optional for update
-        Date birthDate             // nullable for update
+        Date birthDate,
+        MultipartFile picture// nullable for update
 ) {}

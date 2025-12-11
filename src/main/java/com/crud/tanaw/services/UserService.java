@@ -7,9 +7,15 @@ import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -130,6 +136,29 @@ public class UserService {
         if (request.email() != null) user.setEmail(request.email());
         if (request.password() != null) user.setPassword(passwordEncoder.encode(request.password()));
         if (request.role() != null) user.setRole(request.role());
+
+        if (request.picture() != null && !request.picture().isEmpty()) {
+            String contentType = request.picture().getContentType();
+            if (!Arrays.asList("image/jpeg", "image/jpg", "image/png", "image/gif").contains(contentType)) {
+                throw new RuntimeException("Invalid file type");
+            }
+            if (request.picture().getSize() > 5 * 1024 * 1024) {
+                throw new RuntimeException("File size exceeds 5MB");
+            }
+
+            String uploadDir = "uploads/users/";
+            String fileName = UUID.randomUUID() + "_" + request.picture().getOriginalFilename();
+            Path uploadPath = Paths.get(uploadDir);
+
+            try {
+                if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+                Path filePath = uploadPath.resolve(fileName);
+                Files.copy(request.picture().getInputStream(), filePath);
+                user.setPicturePath("users/" + fileName);
+            } catch (IOException e) {
+                throw new RuntimeException("Could not save file: " + e.getMessage());
+            }
+        }
 
         return userRepository.save(user);
     }

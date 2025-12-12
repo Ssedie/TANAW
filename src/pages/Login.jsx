@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
-import { API_URL } from "../config/constants";
 
 function Login() {
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [userIdError, setUserIdError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -17,18 +16,20 @@ function Login() {
 
   async function handleLogin(e) {
     e.preventDefault();
-    setError("");
     setUserIdError("");
     setPasswordError("");
+    setGeneralError("");
     setLoading(true);
 
     let hasError = false;
 
+    // Validate User ID (6 digits)
     if (!/^\d{6}$/.test(userId)) {
       setUserIdError("User ID must be 6 digits");
       hasError = true;
     }
 
+    // Validate password
     if (!password) {
       setPasswordError("Password is required");
       hasError = true;
@@ -40,38 +41,29 @@ function Login() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: parseInt(userId, 10),
-          password,
-        }),
-      });
+      const result = await login({ userId, password });
 
-      if (!response.ok) {
-        const errData = await response.json();
-        setPasswordError(errData.message || "Incorrect User ID or password");
-        throw new Error(errData.message || "Incorrect User ID or password");
+      if (result.error) {
+        if (result.error.user_id) setUserIdError(result.error.user_id);
+        if (result.error.password) setPasswordError(result.error.password);
+        if (result.error.message) setGeneralError(result.error.message);
+        setLoading(false);
+        return;
       }
-
-      const data = await response.json();
-
-      login({
-        token: data.token,
-        role: data.role,
-        userId: data.userId,
-        fName: data.fName,
-        lName: data.lName,
-      });
 
       navigate("/home");
     } catch (err) {
-      setError(err.message);
+      setGeneralError("Login failed. Please try again.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }
+
+  const handleForgotPassword = () => {
+    // Navigate to Forgot Password page
+    navigate("/forgot-password");
+  };
 
   return (
     <div className="h-screen w-full flex">
@@ -97,13 +89,13 @@ function Login() {
         >
           <h2 className="text-[56px] font-bold mb-8 text-[#303D46]">Login</h2>
 
-          {error && (
+          {generalError && (
             <div className="mb-6 p-3 bg-red-100 border border-red-400 text-red-600 flex justify-center rounded">
-              {error}
+              {generalError}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
             {/* USER ID */}
             <div className="col-span-2">
               <label className="block mb-1 font-semibold">User ID</label>
@@ -139,7 +131,6 @@ function Login() {
                   }`}
                 />
 
-                {/* FORMAL EYE / CLOSED EYE */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -168,7 +159,7 @@ function Login() {
                       />
                     </svg>
                   ) : (
-                    // Closed eye (eye with slash)
+                    // Closed eye
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-6 w-6"
@@ -192,9 +183,19 @@ function Login() {
             </div>
           </div>
 
+          {/* Forgot Password Link */}
+          <div className="mb-6 text-right">
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-sm text-[#D87300] font-semibold hover:underline"
+            >
+              Forgot Password?
+            </button>
+          </div>
+
           <button
             type="submit"
-            to="/home"
             disabled={loading}
             className="w-full bg-[#FF6404] text-white p-4 rounded-lg font-semibold hover:bg-[#e55a00] transition mb-4"
           >

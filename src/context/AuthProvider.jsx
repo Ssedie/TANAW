@@ -1,68 +1,91 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
-import axios from "axios";
-import { API_URL } from "../config/constants"; // make sure this points to your backend
+import { createContext, useContext, useState, useEffect } from "react";
+import { API_URL } from "../config/constants";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
+
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Load auth from localStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-    const userId = localStorage.getItem("userId");
-    const fName = localStorage.getItem("fName") || "";
-    const lName = localStorage.getItem("lName") || "";
-    const profileImage = localStorage.getItem("profileImage") || null;
-
-    if (token && role && userId) {
-      setAuth({ token, role, userId, fName, lName, profileImage });
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    const saved = localStorage.getItem("auth");
+    if (saved) {
+      setAuth(JSON.parse(saved));
     }
-
     setLoading(false);
   }, []);
 
-  /**
-   * Login function
-   * @param token - JWT token
-   * @param role - User role
-   * @param userId - User ID
-   * @param fName - First name
-   * @param lName - Last name
-   * @param picturePath - Backend picture path (e.g., "users/abc.png")
-   */
-  function login({ token, role, userId, fName, lName, picturePath }) {
-    // Construct full profile image URL if picturePath exists
-    const profileImage = picturePath
-      ? `${API_URL}/uploads/${picturePath}?t=${Date.now()}`
-      : null;
+  // Persist auth to localStorage whenever it changes
+  useEffect(() => {
+    if (auth) {
+      localStorage.setItem("auth", JSON.stringify(auth));
+    } else {
+      localStorage.removeItem("auth");
+    }
+  }, [auth]);
 
-    // Update auth state
-    setAuth({ token, role, userId, fName, lName, profileImage });
+  // LOGIN
+  const login = async ({ userId, password }) => {
+    if (!userId || !password) {
+      return {
+        error: {
+          user_id: "User ID is required",
+          password: "Password is required",
+        },
+      };
+    }
 
-    // Persist to localStorage
-    localStorage.setItem("token", token);
-    localStorage.setItem("role", role);
-    localStorage.setItem("userId", userId);
-    localStorage.setItem("fName", fName);
-    localStorage.setItem("lName", lName);
-    if (profileImage) localStorage.setItem("profileImage", profileImage);
+    const payload = { user_id: userId, password };
 
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  }
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-  function logout() {
+      if (!response.ok) {
+        const errorText = await response.text();
+        let parsed;
+        try {
+          parsed = JSON.parse(errorText);
+        } catch {
+          parsed = { message: errorText };
+        }
+        return { error: parsed };
+      }
+
+      const data = await response.json();
+
+      const fName = data.fName || "";
+      const lName = data.lName || "";
+      const profileImage = data.picturePath
+        ? `${API_URL}/${data.picturePath}?t=${Date.now()}`
+        : `${fName[0] || "R"}${lName[0] || "J"}`; // default initials
+
+      const newAuth = {
+        token: data.token,
+        userId: data.userId,
+        role: data.role,
+        fName: data.fName,
+        lName: data.lName,
+        profileImage,
+      };
+
+      setAuth(newAuth);
+      return { data: newAuth };
+    } catch (err) {
+      return { error: { message: err.message } };
+    }
+  };
+
+  // LOGOUT
+  const logout = () => {
     setAuth(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("fName");
-    localStorage.removeItem("lName");
-    localStorage.removeItem("profileImage");
-    delete axios.defaults.headers.common["Authorization"];
-  }
+  };
 
   return (
     <AuthContext.Provider value={{ auth, setAuth, login, logout, loading }}>
@@ -70,7 +93,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-export function useAuth() {
-  return useContext(AuthContext);
-}

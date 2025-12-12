@@ -5,14 +5,19 @@ import com.crud.tanaw.dto.ReqRep.AuthResponse;
 import com.crud.tanaw.dto.ReqRep.RegisterRequest;
 import com.crud.tanaw.entities.User;
 import com.crud.tanaw.services.JwtTokenService;
+import com.crud.tanaw.services.PasswordResetService;
 import com.crud.tanaw.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -21,6 +26,7 @@ public class ApiAuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenService jwtTokenService;
     private final UserService userService;
+    private final PasswordResetService passwordResetService;
 
     @Value("${app.super-admin-id}")
     private Integer superAdminId;
@@ -30,10 +36,11 @@ public class ApiAuthController {
 
     public ApiAuthController(AuthenticationManager authenticationManager,
                              JwtTokenService jwtTokenService,
-                             UserService userService) {
+                             UserService userService, PasswordResetService passwordResetService) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenService = jwtTokenService;
         this.userService = userService;
+        this.passwordResetService = passwordResetService;
     }
 
     // ----------------------------------------------------
@@ -136,6 +143,31 @@ public class ApiAuthController {
         );
 
 
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, Object> body) {
+        try {
+            Long userId = Long.valueOf(body.get("user_id").toString());
+
+            // Optional: check if user exists
+            if (!userService.findByUserId(userId).isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "User ID not found"));
+            }
+
+            // Generate reset token
+            String token = passwordResetService.createResetToken(userId);
+
+            // Instead of email, just return the token for now
+            return ResponseEntity.ok(Map.of(
+                    "message", "Reset token generated!",
+                    "token", token
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        }
     }
 
 }

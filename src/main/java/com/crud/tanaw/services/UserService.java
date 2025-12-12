@@ -1,18 +1,23 @@
 package com.crud.tanaw.services;
 
 import com.crud.tanaw.dto.ReqRep.UpdateProfileRequest;
+import com.crud.tanaw.entities.ResetToken;
 import com.crud.tanaw.entities.User;
+import com.crud.tanaw.repositories.ResetTokenRepository;
 import com.crud.tanaw.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
@@ -23,14 +28,16 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final ResetTokenRepository resetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final Random random = new Random();
 
     @Value("${app.upload-dir:uploads/users}")
     private String uploadDir; // default folder if not set in application.properties
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, ResetTokenRepository resetTokenRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.resetTokenRepository = resetTokenRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -186,4 +193,63 @@ public class UserService {
         System.out.println("Updated user ID: " + updated.getUserId());
         return updated;
     }
+
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+
+        User user = findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // ❌ Reject if current password does not match
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        // Optional: New password minimum
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new RuntimeException("New password must be at least 8 characters");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public boolean checkPassword(Long userId, String currentPassword) {
+        User user = userRepository.findByUserId(Math.toIntExact(userId))
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return passwordEncoder.matches(currentPassword, user.getPassword());
+    }
+
+
+    public ResetToken createResetToken(Long userId) {
+        ResetToken token = new ResetToken();
+        token.setUserId(userId);
+        token.setToken(UUID.randomUUID().toString()); // random token
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(15)); // 15 min expiry
+        token.setUsed(false);
+        return resetTokenRepository.save(token);
+    }
+
+    public boolean resetPassword(Long userId, String tokenStr, String newPassword) {
+        ResetToken token = resetTokenRepository.findByTokenAndUsedFalse(tokenStr)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token"));
+
+        if (!token.getUserId().equals(userId) || token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token");
+        }
+
+        User user = findByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        token.setUsed(true);
+        resetTokenRepository.save(token);
+
+        return true;
+    }
+
 }

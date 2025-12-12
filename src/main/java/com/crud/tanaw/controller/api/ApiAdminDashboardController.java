@@ -124,4 +124,20 @@ public class ApiAdminDashboardController {
 
         return ResponseEntity.ok("Password updated");
     }
+
+    // Only super admin can delete a user
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<?> deleteUser(@PathVariable Integer userId, Authentication auth) {
+        if (!SecurityUtil.isAdmin(auth)) {
+            return ResponseEntity.status(403).body("Forbidden");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        userRepository.delete(user);
+
+        return ResponseEntity.ok("User deleted successfully");
+    }
+
 }

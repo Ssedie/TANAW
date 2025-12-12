@@ -60,13 +60,20 @@ function Login() {
     }
   }
 
-  const handleForgotPassword = () => {
-    // Navigate to Forgot Password page
-    navigate("/forgot-password");
-  };
+const handleForgotPassword = () => {
+  // Navigate to Forgot Password page
+  navigate("/forgot-password");
+};
 
   return (
     <div className="h-screen w-full flex">
+            {/* HEADER */}
+      <header className="absolute top-0 left-0 w-full z-30">
+        <div className="p-2 flex items-center">
+          <img src="src/assets/logo.png" alt="Logo" className="h-20 w-20 inline-block" />
+          <h1 className="text-3xl font-bold text-gray-900 ml-[-2px]">Tanaw</h1>
+        </div>
+      </header>
       {/* RIGHT SIDE — IMAGE + GRADIENT */}
       <div
         className="hidden md:flex w-1/2 relative rounded-tr-[300px] rounded-br-[300px] shadow-2xl bg-cover bg-center"
@@ -183,16 +190,17 @@ function Login() {
             </div>
           </div>
 
-          {/* Forgot Password Link */}
-          <div className="mb-6 text-right">
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              className="text-sm text-[#D87300] font-semibold hover:underline"
-            >
-              Forgot Password?
-            </button>
-          </div>
+{/* Forgot Password Link */}
+<div className="mb-6 text-right">
+  <button
+    type="button"
+    onClick={handleForgotPassword}
+    className="text-sm text-[#D87300] font-semibold hover:underline"
+  >
+    Forgot Password?
+  </button>
+</div>
+
 
           <button
             type="submit"

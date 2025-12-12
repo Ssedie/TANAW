@@ -16,6 +16,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Logout from "./pages/Logout";
 import AdminDashboard from "./pages/AdminDashboard";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const App = () => {
   const [sidebarToggle, setSidebarToggle] = useState(true);
@@ -35,7 +37,7 @@ const App = () => {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        {/* Public */}
+        {/* Public Routes */}
         <Route
           path="/"
           element={
@@ -75,6 +77,34 @@ const App = () => {
               transition={{ duration: 0.3 }}
             >
               <Signup />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <motion.div
+              variants={pageTransition}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3 }}
+            >
+              <ForgotPassword />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <motion.div
+              variants={pageTransition}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3 }}
+            >
+              <ResetPassword />
             </motion.div>
           }
         />

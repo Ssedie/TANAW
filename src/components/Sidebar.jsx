@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
-
+import logo from "../assets/logo.png"; // ✅ required for React to load images
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
-  const { auth } = useAuth();  // get auth from context
-  const role = auth?.role || "CITIZEN"; // default to "CITIZEN"
+  const { auth } = useAuth();
+  const role = auth?.role || "CITIZEN";
 
   const menuItems = [
     { icon: "🏠", label: "Home", link: "/home" },
@@ -21,13 +21,10 @@ const Sidebar = ({ isOpen, onClose }) => {
   ];
 
   return (
-<div
-  className={`fixed top-0 left-0 overflow-hidden bg-secondary text-white transition-all duration-300 z-50
-  ${isOpen ? "w-64" : "w-0"} h-screen`}
->
-
-
-
+    <div
+      className={`fixed top-0 left-0 overflow-hidden bg-secondary text-white transition-all duration-300 z-50
+      ${isOpen ? "w-64" : "w-0"} h-screen`}
+    >
       {isOpen && (
         <button
           onClick={onClose}
@@ -45,12 +42,15 @@ const Sidebar = ({ isOpen, onClose }) => {
         </button>
       )}
 
-      <div className="p-4">
-        <Link to="/home" className="text-3xl font-bold text-white hover:text-gray-200">
+      {/* Logo + Title */}
+      <div className="p-2 flex justify-start items-center">
+        <img src={logo} alt="Logo" className="h-20 w-20 " />
+        <Link to="/home" className="text-3xl  font-bold text-white hover:text-gray-200">
           Tanaw
         </Link>
       </div>
 
+      {/* Menu Items */}
       <nav className="mt-6">
         {menuItems.map((item, index) => (
           <Link

@@ -12,10 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,10 +36,13 @@ public class ApiAuthController {
         this.userService = userService;
     }
 
+    // ----------------------------------------------------
+    // LOGIN
+    // ----------------------------------------------------
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody AuthRequest request) {
 
-        // Super Admin login
+        // Super Admin login (unchanged)
         if (Integer.valueOf(request.user_id()).equals(superAdminId)) {
             if (!request.password().equals(superAdminPassword)) {
                 throw new BadCredentialsException("Incorrect User Id or Password");
@@ -56,12 +56,9 @@ public class ApiAuthController {
 
         // Normal user login
         Long userId = Long.valueOf(request.user_id());
-
-        // 1️⃣ Fetch user safely
         User user = userService.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 2️⃣ Authenticate
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         String.valueOf(userId),
@@ -69,27 +66,33 @@ public class ApiAuthController {
                 )
         );
 
-        // 3️⃣ Generate JWT token
         String token = jwtTokenService.generateToken(authentication);
         Long expiresAt = jwtTokenService.extractExpirationTime(token);
 
         String fName = user.getFName() != null ? user.getFName() : "";
         String lName = user.getLName() != null ? user.getLName() : "";
+        String picturePath = user.getPicturePath(); // ✅ include picture path
 
-        String picturePath = user.getPicturePath();
-
-        return new AuthResponse(token, user.getUserId(), expiresAt, user.getRole(), fName, lName, picturePath);
+        return new AuthResponse(
+                token,
+                user.getUserId(),
+                expiresAt,
+                user.getRole(),
+                fName,
+                lName,
+                picturePath
+        );
     }
 
 
-
+    // ----------------------------------------------------
+    // REGISTER
+    // ----------------------------------------------------
     @PostMapping("/register")
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
 
-        // Always default to CITIZEN on self signup
         String assignedRole = "CITIZEN";
 
-        // Prevent user self-registering as admin
         if (request.role() != null && request.role().equalsIgnoreCase("ADMIN")) {
             throw new RuntimeException("Admin accounts cannot be created from public signup.");
         }
@@ -112,7 +115,6 @@ public class ApiAuthController {
                 request.zipCode()
         );
 
-        // Authenticate new user
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         String.valueOf(savedUser.getUserId()),
@@ -130,8 +132,10 @@ public class ApiAuthController {
                 savedUser.getRole(),
                 savedUser.getFName(),
                 savedUser.getLName(),
-                savedUser.getAccountStatus()
+                savedUser.getPicturePath() // ✅ include picture path
         );
+
+
     }
 
 }

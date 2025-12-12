@@ -57,9 +57,8 @@ public class UserDTO {
     @Max(value = 9999, message = "Zip code must not exceed 4 digits")
     private Integer zipCode;
 
-    @NotNull(message = "Birthdate is required")
-    @Past(message = "Birthdate must be in the past")
-    private LocalDate birthDate;
+    private String birthDate;
+
     private String accountStatus;
 
     private String picturePath;
@@ -67,7 +66,7 @@ public class UserDTO {
     public UserDTO(Integer userId, String fName, String mName, String lName, String email,
                    String role, String phoneNumber, String street, String barangay,
                    String city, String province, String region, String country,
-                   Integer zipCode, LocalDate birthDate, String picturePath, String accountStatus) {
+                   Integer zipCode, String birthDate, String picturePath, String accountStatus) {
         this.userId = userId;
         this.fName = fName;
         this.mName = mName;
@@ -200,11 +199,11 @@ public class UserDTO {
         this.zipCode = zipCode;
     }
 
-    public LocalDate getBirthDate() {
+    public String getBirthDate() {
         return birthDate;
     }
 
-    public void setBirthDate(LocalDate birthDate) {
+    public void setBirthDate(String birthDate) {
         this.birthDate = birthDate;
     }
 

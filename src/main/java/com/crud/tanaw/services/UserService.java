@@ -13,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.*;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
@@ -74,12 +73,11 @@ public class UserService {
 
         if (birthDate != null && !birthDate.isEmpty()) {
             try {
-                user.setBirthDate(LocalDate.parse(birthDate)); // expects "yyyy-MM-dd"
+                user.setBirthDate(new SimpleDateFormat("yyyy-MM-dd").parse(birthDate).toString());
             } catch (Exception e) {
                 throw new RuntimeException("Invalid birth date format (expected yyyy-MM-dd)");
             }
         }
-
 
         user.setStreet(street);
         user.setBarangay(barangay);

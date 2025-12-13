@@ -311,11 +311,10 @@ const Settings = () => {
 // ==================== UI COMPONENTS ====================
 const Alert = ({ type, message }) => (
   <div
-    className={`mb-6 p-4 rounded-lg border-l-4 flex items-start gap-3 ${
-      type === "error"
+    className={`mb-6 p-4 rounded-lg border-l-4 flex items-start gap-3 ${type === "error"
         ? "bg-red-50 border-red-500 text-red-700"
         : "bg-green-50 border-green-500 text-green-700"
-    }`}
+      }`}
   >
     {type === "error" ? (
       <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />
@@ -340,7 +339,7 @@ const ProfileForm = ({ userData, errors, onChange, onFileChange, onSubmit, savin
     {/* Profile Picture */}
     <div className="mb-8 flex flex-col items-center">
       <div className="relative mb-4">
-        {userData.picturePreview && userData.picture ? (
+        {userData.picturePreview ? (
           <img
             src={userData.picturePreview}
             alt="Profile"
@@ -481,13 +480,12 @@ const Field = ({ label, name, value, onChange, type = "text", disabled, error })
       value={value}
       onChange={onChange}
       disabled={disabled}
-      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6404] transition-colors ${
-        disabled
+      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6404] transition-colors ${disabled
           ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed"
           : error
-          ? "border-red-500 bg-red-50"
-          : "border-gray-300 focus:border-[#FF6404]"
-      }`}
+            ? "border-red-500 bg-red-50"
+            : "border-gray-300 focus:border-[#FF6404]"
+        }`}
     />
     {error && <p className="text-red-600 text-sm mt-1.5">{error}</p>}
   </div>

@@ -69,6 +69,7 @@ const Settings = () => {
         picturePreview: data.picturePath
           ? `${API_URL}/${data.picturePath}?t=${Date.now()}`
           : `${(data.fName?.[0] || "T")}${(data.lName?.[0] || "W")}`,
+          picture:null,
       });
     } catch (err) {
       setErrors({ general: err.message });

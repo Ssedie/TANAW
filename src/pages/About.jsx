@@ -1,4 +1,5 @@
 import React from "react";
+import { Target, Eye, Zap } from "lucide-react";
 
 const officials = {
   leaders: [
@@ -30,97 +31,123 @@ const About = () => {
   const renderOfficialCard = (official) => (
     <div
       key={official.name}
-      className="bg-white p-4 rounded-2xl shadow-md hover:shadow-xl transition duration-300 flex flex-col items-center group relative"
+      className="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col items-center group relative h-full"
     >
-      <img
-        src={official.photo}
-        alt={official.name}
-        className="w-full h-40 object-cover mb-4 rounded-lg"
-      />
-      <h4 className="font-bold text-lg text-[#FF6404]">{official.name}</h4>
-      <p className="text-gray-600 text-sm">{official.role}</p>
-      <div className="absolute inset-0 bg-[#FF6404]/90 text-white p-4 rounded-2xl flex items-center justify-center text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <p className="text-sm">{official.bio}</p>
+      <div className="relative w-full h-40 overflow-hidden">
+        <img
+          src={official.photo}
+          alt={official.name}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+        />
+      </div>
+      
+      <div className="p-4 text-center flex-1 flex flex-col justify-center w-full">
+        <h4 className="font-bold text-lg text-[#FF6404]">{official.name}</h4>
+        <p className="text-gray-600 text-sm">{official.role}</p>
+      </div>
+
+      <div className="absolute inset-0 bg-gradient-to-t from-[#FF6404]/95 to-[#FF6404]/80 text-white p-4 rounded-2xl flex items-center justify-center text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <p className="text-sm font-medium">{official.bio}</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen px-6 py-6 space-y-6 ">
-
+    <div className="min-h-screen bg-gray-50">
       {/* Hero / Intro */}
-<section className="w-full bg-[#475C68] py-8 px-8 rounded-2xl text-left shadow-md hover:shadow-2xl transition-shadow duration-300">
-  <h1 className="text-5xl font-bold text-white mb-4">
-    About Tanaw: Barangay Budget and Transparency App
-  </h1>
-  <p className="text-gray-200 text-lg">
-    Tanaw is a digital platform designed to promote transparency, accountability, and accessibility in barangay governance. Specifically developed for Barangay Taboc, San Juan, La Union, the system provides citizens and barangay officials with a convenient way to view, manage, and track barangay budgets, projects, and documents.
-  </p>
-  <p className="text-gray-200 text-lg mt-4">
-    Through Tanaw, citizens can now stay informed about how funds are allocated and utilized, while officials can efficiently organize and publish important barangay records—all in one secure, centralized system.
-  </p>
-</section>
+      <section className="w-full bg-gradient-to-r from-[#5C7D92] to-[#FF6404] py-16 px-6 md:px-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            About Tanaw
+          </h1>
+          <p className="text-lg text-gray-100 mb-4 leading-relaxed">
+            Tanaw is a digital platform designed to promote transparency, accountability, and accessibility in barangay governance. Specifically developed for Barangay Taboc, Calasiao, Ilocos Sur, the system provides citizens and barangay officials with a convenient way to view, manage, and track barangay budgets, projects, and documents.
+          </p>
+          <p className="text-lg text-gray-100 leading-relaxed">
+            Through Tanaw, citizens can now stay informed about how funds are allocated and utilized, while officials can efficiently organize and publish important barangay records—all in one secure, centralized system.
+          </p>
+        </div>
+      </section>
 
-{/* Mission & Vision */}
-<section className="max-w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-  <div className="bg-gradient-to-b from-[#475C68] to-[#5C7D92] p-6 rounded-2xl shadow-md hover:shadow-2xl transition-shadow duration-300">
-    <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Mission</h2>
-    <p className="text-white text-lg pl-2">
-      “A transparent, accountable, and digitally empowered barangay where citizens and officials work hand in hand for progress.”
-    </p>
-  </div>
-  <div className="bg-gradient-to-b from-[#475C68] to-[#5C7D92] p-6 rounded-2xl shadow-md hover:shadow-2xl transition-shadow duration-300">
-    <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Vision</h2>
-    <p className="text-white text-lg pl-2">
-      “To provide an accessible and reliable platform that enhances public awareness and promotes honesty in barangay budgeting and project implementation.”
-    </p>
-  </div>
-</section>
+      {/* Mission & Vision & Purpose */}
+      <section className="max-w-6xl mx-auto px-6 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Mission */}
+          <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-8 border-l-4 border-[#5C7D92]">
+            <div className="flex items-center gap-3 mb-4">
+              <Target size={32} className="text-[#5C7D92]" />
+              <h2 className="text-2xl font-bold text-[#5C7D92]">Mission</h2>
+            </div>
+            <p className="text-gray-700 leading-relaxed">
+              "A transparent, accountable, and digitally empowered barangay where citizens and officials work hand in hand for progress."
+            </p>
+          </div>
 
-{/* Purpose */}
-<section className="w-full bg-gradient-to-b from-[#5C7D92] via-[#FFFFFF] to-[#D87300] p-8 rounded-2xl shadow-md mt-8 hover:shadow-2xl transition-shadow duration-300">
-  <h2 className="text-3xl font-bold text-left mb-4">Purpose</h2>
-  <p className="mb-4 text-lg text-left">
-    <strong>Tanaw</strong> aims to digitize barangay record management and improve public transparency by providing a user-friendly web application where:
-  </p>
+          {/* Vision */}
+          <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-8 border-l-4 border-[#FF6404]">
+            <div className="flex items-center gap-3 mb-4">
+              <Eye size={32} className="text-[#FF6404]" />
+              <h2 className="text-2xl font-bold text-[#FF6404]">Vision</h2>
+            </div>
+            <p className="text-gray-700 leading-relaxed">
+              "To provide an accessible and reliable platform that enhances public awareness and promotes honesty in barangay budgeting."
+            </p>
+          </div>
 
-  <ul className="list-disc list-inside text-left text-lg pl-4">
-    <li className="mb-2">
-      <strong>Officials</strong> can upload and manage budget proposals, projects, and documents.
-    </li>
-    <li className="mb-2">
-      <strong>Citizens</strong> can access approved budgets, read project details, and give feedback.
-    </li>
-    <li className="mb-2">
-      <strong>Admins</strong> can monitor user activity, approve accounts, and maintain data integrity.
-    </li>
-  </ul>
-</section>
+          {/* Purpose */}
+          <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-8 border-l-4 border-[#FF6404]">
+            <div className="flex items-center gap-3 mb-4">
+              <Zap size={32} className="text-[#FF6404]" />
+              <h2 className="text-2xl font-bold text-[#FF6404]">Purpose</h2>
+            </div>
+            <p className="text-gray-700 leading-relaxed">
+              Digitize barangay record management and improve public transparency through a user-friendly web application for all.
+            </p>
+          </div>
+        </div>
 
-
+        {/* Key Features */}
+        <div className="mt-12 bg-gray-100 rounded-2xl p-8">
+          <h3 className="text-2xl font-bold text-[#5C7D92] mb-6">Key Features</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-lg p-6">
+              <h4 className="font-bold text-[#FF6404] mb-2">For Officials</h4>
+              <p className="text-gray-700 text-sm">Upload and manage budget proposals, projects, and documents efficiently.</p>
+            </div>
+            <div className="bg-white rounded-lg p-6">
+              <h4 className="font-bold text-[#FF6404] mb-2">For Citizens</h4>
+              <p className="text-gray-700 text-sm">Access approved budgets, read project details, and provide valuable feedback.</p>
+            </div>
+            <div className="bg-white rounded-lg p-6">
+              <h4 className="font-bold text-[#FF6404] mb-2">For Admins</h4>
+              <p className="text-gray-700 text-sm">Monitor activity, approve accounts, and maintain data integrity.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Officials Hierarchy */}
-      <section>
-        <h2 className="text-6xl font-black text-[#D87300] text-center shadow-sm-black mt-8 mb-12">
-          Brgy. Taboc Officials
+      <section className="max-w-6xl mx-auto px-6 py-16">
+        <h2 className="text-5xl font-bold text-center text-[#5C7D92] mb-12">
+          Barangay Taboc Officials
         </h2>
 
-        {/* Captain at the top */}
-        <div className="flex justify-center mb-8">
-          <div className="w-full max-w-xs sm:max-w-sm">
+        {/* Barangay Captain */}
+        <div className="flex justify-center mb-16">
+          <div className="w-full max-w-xs">
             {renderOfficialCard(officials.leaders[0])}
           </div>
         </div>
 
         {/* Secretary & Treasurer */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 justify-center mb-12 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-3xl mx-auto mb-16">
           {officials.leaders.slice(1).map(renderOfficialCard)}
         </div>
 
         {/* Councilors */}
-        <div className="mb-12">
-          <h3 className="text-3xl font-bold text-[#5C7D92] text-center mb-8">Councilors</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-6xl mx-auto">
+        <div className="mb-16">
+          <h3 className="text-3xl font-bold text-[#5C7D92] text-center mb-8">Sangguniang Barangay Councilors</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
             {officials.councilors.map(renderOfficialCard)}
           </div>
         </div>
@@ -128,31 +155,34 @@ const About = () => {
         {/* SK Officials */}
         <div>
           <h3 className="text-3xl font-bold text-[#5C7D92] text-center mb-8">SK Officials</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {officials.sk.map(renderOfficialCard)}
           </div>
         </div>
       </section>
 
-
       {/* Developers */}
-      <section>
+      <section className="max-w-4xl mx-auto px-6 py-16">
         <h2 className="text-4xl font-bold text-[#5C7D92] text-center mb-12">
-          Developers
+          Development Team
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {developers.map((dev, index) => (
             <div
               key={index}
-              className="bg-white p-4 rounded-2xl shadow-md hover:shadow-xl transition duration-300 flex flex-col items-center"
+              className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
             >
-              <img
-                src={dev.photo}
-                alt={dev.name}
-                className="w-full h-40 object-cover mb-4 rounded-lg"
-              />
-              <h3 className="font-bold text-lg text-[#FF6404]">{dev.name}</h3>
-              <p className="text-gray-600 text-sm">{dev.role}</p>
+              <div className="relative h-40 overflow-hidden">
+                <img
+                  src={dev.photo}
+                  alt={dev.name}
+                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                />
+              </div>
+              <div className="p-6 text-center flex-1 flex flex-col justify-center">
+                <h3 className="font-bold text-lg text-[#FF6404]">{dev.name}</h3>
+                <p className="text-gray-600 text-sm">{dev.role}</p>
+              </div>
             </div>
           ))}
         </div>

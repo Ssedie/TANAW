@@ -32,6 +32,7 @@ function Projects() {
   const [feedbacksMap, setFeedbacksMap] = useState({});
   const [feedbackInputMap, setFeedbackInputMap] = useState({});
   const [ratingInputMap, setRatingInputMap] = useState({});
+  const [expandedFeedback, setExpandedFeedback] = useState({});
 
   // --- Fetch Projects & Plans ---
   useEffect(() => {
@@ -133,13 +134,11 @@ function Projects() {
         projectId
       }, { headers });
 
-      // Update activities for this project immediately
       setActivitiesMap(prev => ({
         ...prev,
         [projectId]: [...(prev[projectId] || []), res.data]
       }));
 
-      // Reset the form for this project
       setNewActivityMap(prev => ({
         ...prev,
         [projectId]: { activityName: "", description: "", date: new Date().toISOString().split('T')[0], expenses: 0, type: "Report" }
@@ -154,7 +153,10 @@ function Projects() {
   const handleAddFeedback = async (projectId) => {
     const content = feedbackInputMap[projectId] || "";
     const rating = ratingInputMap[projectId] || 0;
-    if (!content || rating <= 0) return;
+    if (!content.trim() || rating <= 0) {
+      alert("Please provide feedback and a rating");
+      return;
+    }
 
     try {
       const headers = { Authorization: `Bearer ${auth.token}` };
@@ -173,6 +175,7 @@ function Projects() {
       setRatingInputMap(prev => ({ ...prev, [projectId]: 0 }));
     } catch (err) {
       console.error(err);
+      alert("Failed to submit feedback");
     }
   };
 
@@ -182,6 +185,22 @@ function Projects() {
     if (feedbacks.length === 0) return 0;
     return (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1);
   };
+
+  // --- Star Rating Component ---
+  const StarRating = ({ value, onChange, maxStars = 5 }) => (
+    <div className="flex gap-1">
+      {[...Array(maxStars)].map((_, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onChange(i + 1)}
+          className={`text-2xl transition ${i < value ? "text-yellow-400" : "text-gray-300"} hover:text-yellow-300`}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
 
   // --- Carousel Settings ---
   const sliderSettings = { dots: true, infinite: false, speed: 500, slidesToShow: 1, slidesToScroll: 1 };
@@ -217,7 +236,7 @@ function Projects() {
             <input type="file" onChange={handleFileChange} className="p-3 border rounded w-full" />
             {documentPreview && <img src={documentPreview} alt="Preview" className="max-h-40 rounded border mt-2" />}
 
-            <button type="submit" disabled={submitting} className="bg-[#FF6404] text-white p-3 rounded font-semibold hover:bg-[#e55a00]">
+            <button type="submit" disabled={submitting} className="bg-[#FF6404] text-white p-3 rounded font-semibold hover:bg-[#e55a00] disabled:opacity-50">
               {submitting ? "Adding..." : "Add Project"}
             </button>
           </form>
@@ -230,30 +249,63 @@ function Projects() {
         {projects.map(proj => {
           const activities = activitiesMap[proj.projectId] || [];
           const avgRating = computeAvgRating(proj.projectId);
+          const feedbacks = feedbacksMap[proj.projectId] || [];
+          const showExpandedFeedback = expandedFeedback[proj.projectId];
 
           return (
             <div key={proj.projectId} className="bg-white p-6 rounded-2xl shadow mx-2">
-              <h3 className="text-xl font-semibold">{proj.projectName}</h3>
-              <p>{proj.description}</p>
-              <p><strong>Allocated Budget:</strong> ₱{proj.allocatedBudget}</p>
-              <p><strong>Status:</strong> {proj.projectStatus}</p>
-              <p><strong>Spent:</strong> ₱{activities.filter(a => a.type === "Expense").reduce((sum, a) => sum + Number(a.expenses || 0), 0).toLocaleString()}</p>
-              <p><strong>Average Rating:</strong> {avgRating} ⭐</p>
+              <h3 className="text-2xl font-bold mb-2 text-[#4B3A2F]">{proj.projectName}</h3>
+              <p className="text-gray-700 mb-4">{proj.description}</p>
 
-              {/* Activities Section */}
-              {auth.role === "ADMIN" && (
-                <div className="mt-4 border-t pt-4">
-                  <h4 className="font-semibold">Recent Activities</h4>
-                  {activities.map(a => (
-                    <div key={a.activityId} className="border-b py-1">
-                      <p><strong>{a.type}:</strong> {a.activityName}</p>
-                      <p>{a.description}</p>
-                      {a.type === "Expense" && <p className="text-sm">Amount: ₱{a.expenses.toLocaleString()}</p>}
+              {/* Project Info */}
+              <div className="grid grid-cols-2 gap-4 mb-6 py-4 border-y border-gray-200">
+                <div>
+                  <p className="text-sm text-gray-500">Allocated Budget</p>
+                  <p className="text-lg font-semibold text-[#FF6404]">₱{Number(proj.allocatedBudget).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Status</p>
+                  <p className={`text-lg font-semibold ${proj.projectStatus === "COMPLETED" ? "text-green-600" : proj.projectStatus === "CANCELLED" ? "text-red-600" : "text-blue-600"}`}>
+                    {proj.projectStatus}
+                  </p>
+                </div>
+                {auth.role === "ADMIN" && (
+                  <>
+                    <div>
+                      <p className="text-sm text-gray-500">Spent</p>
+                      <p className="text-lg font-semibold">₱{activities.filter(a => a.type === "Expense").reduce((sum, a) => sum + Number(a.expenses || 0), 0).toLocaleString()}</p>
                     </div>
-                  ))}
+                    <div>
+                      <p className="text-sm text-gray-500">Citizen Rating</p>
+                      <p className="text-lg font-semibold">{avgRating} ⭐</p>
+                    </div>
+                  </>
+                )}
+              </div>
 
-                  {/* Add Activity */}
-                  <div className="mt-2">
+              {/* Admin Activities Section */}
+              {auth.role === "ADMIN" && (
+                <div className="mb-6 border-t pt-6">
+                  <h4 className="text-lg font-semibold mb-4">Activities</h4>
+                  <div className="max-h-48 overflow-y-auto mb-4 bg-gray-50 rounded p-4">
+                    {activities.length === 0 ? (
+                      <p className="text-gray-500 text-sm">No activities yet</p>
+                    ) : (
+                      activities.map(a => (
+                        <div key={a.activityId} className="border-b border-gray-200 py-3 last:border-b-0">
+                          <p className="font-semibold text-[#4B3A2F]">{a.activityName}</p>
+                          <p className="text-sm text-gray-600">{a.description}</p>
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>{a.type}</span>
+                            {a.type === "Expense" && <span>₱{Number(a.expenses).toLocaleString()}</span>}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add Activity Form */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
                     <input
                       type="text"
                       placeholder="Activity Name"
@@ -262,7 +314,7 @@ function Projects() {
                         ...prev,
                         [proj.projectId]: { ...prev[proj.projectId], activityName: e.target.value, type: prev[proj.projectId]?.type || "Report" }
                       }))}
-                      className="p-2 border rounded w-full mb-2"
+                      className="p-2 border rounded w-full mb-2 text-sm"
                     />
                     <textarea
                       placeholder="Description"
@@ -271,28 +323,31 @@ function Projects() {
                         ...prev,
                         [proj.projectId]: { ...prev[proj.projectId], description: e.target.value }
                       }))}
-                      className="p-2 border rounded w-full mb-2"
+                      className="p-2 border rounded w-full mb-2 text-sm resize-none"
+                      rows="2"
                     />
-                    <input
-                      type="date"
-                      value={newActivityMap[proj.projectId]?.date || new Date().toISOString().split('T')[0]}
-                      onChange={e => setNewActivityMap(prev => ({
-                        ...prev,
-                        [proj.projectId]: { ...prev[proj.projectId], date: e.target.value }
-                      }))}
-                      className="p-2 border rounded mb-2 w-full"
-                    />
-                    <select
-                      value={newActivityMap[proj.projectId]?.type || "Report"}
-                      onChange={e => setNewActivityMap(prev => ({
-                        ...prev,
-                        [proj.projectId]: { ...prev[proj.projectId], type: e.target.value }
-                      }))}
-                      className="p-2 border rounded mb-2"
-                    >
-                      <option value="Report">Report / Documentation</option>
-                      <option value="Expense">Expense</option>
-                    </select>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <input
+                        type="date"
+                        value={newActivityMap[proj.projectId]?.date || new Date().toISOString().split('T')[0]}
+                        onChange={e => setNewActivityMap(prev => ({
+                          ...prev,
+                          [proj.projectId]: { ...prev[proj.projectId], date: e.target.value }
+                        }))}
+                        className="p-2 border rounded text-sm"
+                      />
+                      <select
+                        value={newActivityMap[proj.projectId]?.type || "Report"}
+                        onChange={e => setNewActivityMap(prev => ({
+                          ...prev,
+                          [proj.projectId]: { ...prev[proj.projectId], type: e.target.value }
+                        }))}
+                        className="p-2 border rounded text-sm"
+                      >
+                        <option value="Report">Report</option>
+                        <option value="Expense">Expense</option>
+                      </select>
+                    </div>
                     {newActivityMap[proj.projectId]?.type === "Expense" && (
                       <input
                         type="number"
@@ -302,43 +357,86 @@ function Projects() {
                           ...prev,
                           [proj.projectId]: { ...prev[proj.projectId], expenses: Number(e.target.value) }
                         }))}
-                        className="p-2 border rounded mb-2 w-full"
+                        className="p-2 border rounded mb-2 w-full text-sm"
                       />
                     )}
-                    <button onClick={() => handleAddActivity(proj.projectId)} className="px-3 py-1 bg-[#4B3A2F] text-white rounded">
+                    <button 
+                      onClick={() => handleAddActivity(proj.projectId)} 
+                      className="px-4 py-2 bg-[#4B3A2F] text-white rounded text-sm font-semibold hover:bg-[#3a2d23]"
+                    >
                       Add Activity
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Citizen Feedback */}
+              {/* Citizen Feedback Section */}
               {auth.role === "CITIZEN" && (
-                <div className="mt-4">
-                  <h4 className="font-semibold">Leave Feedback & Rating</h4>
-                  <textarea
-                    value={feedbackInputMap[proj.projectId] || ""}
-                    onChange={e => setFeedbackInputMap(prev => ({ ...prev, [proj.projectId]: e.target.value }))}
-                    className="w-full border rounded p-2 mb-2"
-                    placeholder="Your feedback"
-                  />
-                  <input
-                    type="number"
-                    min={1}
-                    max={5}
-                    value={ratingInputMap[proj.projectId] || 0}
-                    onChange={e => setRatingInputMap(prev => ({ ...prev, [proj.projectId]: Number(e.target.value) }))}
-                    className="border rounded p-2 w-20"
-                  />
-                  <button onClick={() => handleAddFeedback(proj.projectId)} className="ml-2 px-2 py-1 bg-[#4B3A2F] text-white rounded">Submit</button>
+                <div className="border-t pt-6">
+                  <h4 className="text-lg font-semibold mb-4">Community Feedback</h4>
 
-                  <div className="mt-2 max-h-40 overflow-y-auto border-t pt-2">
-                    {(feedbacksMap[proj.projectId] || []).map((f, i) => (
-                      <div key={i} className="border-b py-1">
-                        <p><strong>{f.user?.fName || "Anonymous"}:</strong> {f.content}</p>
-                        <p className="text-xs">Rating: {f.rating} ⭐</p>
+                  {/* Feedback Stats */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-4">
+                    <p className="text-sm text-gray-600 mb-1">Overall Rating</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl font-bold text-[#4B3A2F]">{avgRating}</span>
+                      <div className="text-xl">⭐</div>
+                      <span className="text-sm text-gray-500">({feedbacks.length} reviews)</span>
+                    </div>
+                  </div>
+
+                  {/* Add Feedback Form */}
+                  <div className="bg-[#FFF5F0] p-4 rounded-lg mb-6 border border-[#FFE0D6]">
+                    <label className="block text-sm font-semibold text-[#4B3A2F] mb-2">Share Your Feedback</label>
+                    <textarea
+                      value={feedbackInputMap[proj.projectId] || ""}
+                      onChange={e => setFeedbackInputMap(prev => ({ ...prev, [proj.projectId]: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg p-3 mb-3 resize-none focus:outline-none focus:ring-2 focus:ring-[#FF6404]"
+                      placeholder="Tell us about your experience with this project..."
+                      rows="3"
+                    />
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-sm font-semibold text-[#4B3A2F] mb-2">Rate this project</label>
+                        <StarRating 
+                          value={ratingInputMap[proj.projectId] || 0}
+                          onChange={(val) => setRatingInputMap(prev => ({ ...prev, [proj.projectId]: val }))}
+                        />
                       </div>
-                    ))}
+                      <button 
+                        onClick={() => handleAddFeedback(proj.projectId)} 
+                        className="px-6 py-2 bg-[#FF6404] text-white rounded-lg font-semibold hover:bg-[#e55a00] h-fit"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Display Feedbacks */}
+                  <div>
+                    <button
+                      onClick={() => setExpandedFeedback(prev => ({ ...prev, [proj.projectId]: !showExpandedFeedback }))}
+                      className="text-sm font-semibold text-[#FF6404] hover:text-[#e55a00] mb-3"
+                    >
+                      {showExpandedFeedback ? "Hide" : "Show"} All Reviews ({feedbacks.length})
+                    </button>
+
+                    <div className={`space-y-3 ${showExpandedFeedback ? "max-h-96 overflow-y-auto" : "max-h-48 overflow-y-auto"}`}>
+                      {feedbacks.length === 0 ? (
+                        <p className="text-gray-500 text-sm text-center py-4">No reviews yet. Be the first to share!</p>
+                      ) : (
+                        feedbacks.map((f, i) => (
+                          <div key={i} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                            <div className="flex justify-between items-start mb-1">
+                              <p className="font-semibold text-[#4B3A2F]">{f.user?.fName || "Anonymous"}</p>
+                              <span className="text-yellow-400">{"★".repeat(f.rating)}</span>
+                            </div>
+                            <p className="text-sm text-gray-700">{f.content}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

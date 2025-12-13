@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthProvider";
-import { Trash2, RotateCcw, Eye } from "lucide-react";
+import { Trash2, RotateCcw, Eye, CheckCircle, XCircle } from "lucide-react";
 
 const AdminDashboardContent = () => {
   const { auth } = useAuth();
@@ -10,6 +10,7 @@ const AdminDashboardContent = () => {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [deleteUserId, setDeleteUserId] = useState(null);
+  const [statusChangeUserId, setStatusChangeUserId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
   useEffect(() => {
@@ -45,6 +46,7 @@ const AdminDashboardContent = () => {
       setUsers(prev =>
         prev.map(user => (user.userId === userId ? { ...user, role: newRole } : user))
       );
+      showToast("Role updated successfully", "success");
     } catch (err) {
       console.error("Error updating role:", err);
       alert(err.response?.data?.message || "Failed to update role");
@@ -68,6 +70,27 @@ const AdminDashboardContent = () => {
     } catch (err) {
       console.error("Error updating password:", err);
       alert(err.response?.data?.message || "Failed to update password");
+    }
+  };
+
+  const handleStatusChange = async (userId, newStatus) => {
+    try {
+      await axios.put(
+        `http://localhost:8000/api/admin/status/${userId}`,
+        null,
+        { 
+          params: { accountStatus: newStatus }, 
+          headers: { Authorization: `Bearer ${auth.token}` } 
+        }
+      );
+      setUsers(prev =>
+        prev.map(user => (user.userId === userId ? { ...user, accountStatus: newStatus } : user))
+      );
+      showToast(`User ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully`, "success");
+      setStatusChangeUserId(null);
+    } catch (err) {
+      console.error("Error updating status:", err);
+      alert(err.response?.data?.message || "Failed to update user status");
     }
   };
 
@@ -102,7 +125,7 @@ const AdminDashboardContent = () => {
   if (error) return <div className="p-6 text-red-600">Error: {error}</div>;
 
   return (
-    <div className="p-6  min-h-screen">
+    <div className="p-6 min-h-screen">
       <h2 className="text-3xl font-bold mb-6 text-[#5C7D92]">Admin Dashboard</h2>
 
       {users.length === 0 ? (
@@ -125,7 +148,7 @@ const AdminDashboardContent = () => {
               {users.map((user, idx) => (
                 <tr
                   key={user.userId}
-                  className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors duration-150 border-b border-gray-200`}
+                  className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors duration-150 border-b border-gray-200 ${user.accountStatus !== 'ACTIVE' ? 'opacity-60' : ''}`}
                 >
                   <td className="py-3 px-4 text-sm">{user.userId}</td>
                   <td className="py-3 px-4 text-sm font-medium">
@@ -136,39 +159,60 @@ const AdminDashboardContent = () => {
                     <select
                       value={user.role}
                       onChange={(e) => handleRoleChange(user.userId, e.target.value)}
-                      className="px-2 py-1 text-sm font-medium border border-gray-300 rounded-md hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6404]"
+                      disabled={user.accountStatus !== 'ACTIVE'}
+                      className="px-2 py-1 text-sm font-medium border border-gray-300 rounded-md hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6404] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="CITIZEN">CITIZEN</option>
                       <option value="ADMIN">ADMIN</option>
                     </select>
                   </td>
                   <td className="py-3 px-4 text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${
                       user.accountStatus === 'ACTIVE' 
                         ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
                     }`}>
+                      {user.accountStatus === 'ACTIVE' ? (
+                        <CheckCircle className="w-3 h-3" />
+                      ) : (
+                        <XCircle className="w-3 h-3" />
+                      )}
                       {user.accountStatus}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm">{user.phoneNumber || "-"}</td>
                   <td className="py-3 px-4">
                     <div className="flex gap-2 flex-wrap">
-                      <button
-                        onClick={() => handlePasswordReset(user.userId)}
-                        className="bg-[#5C7D92] hover:bg-[#4e6b7d] text-white text-xs px-2 py-1 rounded transition-colors duration-200 flex items-center gap-1"
-                        title="Reset Password"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                 
-                      </button>
+                      {user.accountStatus === 'ACTIVE' && (
+                        <button
+                          onClick={() => handlePasswordReset(user.userId)}
+                          className="bg-[#5C7D92] hover:bg-[#4e6b7d] text-white text-xs px-2 py-1 rounded transition-colors duration-200 flex items-center gap-1"
+                          title="Reset Password"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleView(user)}
                         className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded transition-colors duration-200 flex items-center gap-1"
                         title="View Details"
                       >
                         <Eye className="w-3 h-3" />
-                
+                      </button>
+                      <button
+                        onClick={() => setStatusChangeUserId(user.userId)}
+                        className={`text-white text-xs px-2 py-1 rounded transition-colors duration-200 flex items-center gap-1 ${
+                          user.accountStatus === 'ACTIVE'
+                            ? 'bg-yellow-500 hover:bg-yellow-600'
+                            : 'bg-green-500 hover:bg-green-600'
+                        }`}
+                        title={user.accountStatus === 'ACTIVE' ? 'Deactivate User' : 'Activate User'}
+                      >
+                        {user.accountStatus === 'ACTIVE' ? (
+                          <XCircle className="w-3 h-3" />
+                        ) : (
+                          <CheckCircle className="w-3 h-3" />
+                        )}
                       </button>
                       <button
                         onClick={() => setDeleteUserId(user.userId)}
@@ -176,7 +220,6 @@ const AdminDashboardContent = () => {
                         title="Delete User"
                       >
                         <Trash2 className="w-3 h-3" />
-                       
                       </button>
                     </div>
                   </td>
@@ -211,6 +254,16 @@ const AdminDashboardContent = () => {
 
             {/* Content */}
             <div className="max-h-[70vh] overflow-y-auto p-8">
+              {selectedUser.accountStatus !== 'ACTIVE' && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                  <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-red-800">Account Inactive</p>
+                    <p className="text-sm text-red-700 mt-1">This user account is currently inactive and cannot access the system.</p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-8 mb-8">
                 <div>
                   <label className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Email</label>
@@ -238,11 +291,16 @@ const AdminDashboardContent = () => {
                 <div>
                   <label className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Status</label>
                   <p className="text-gray-900 font-medium mt-2">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-2 w-fit ${
                       selectedUser.accountStatus === 'ACTIVE' 
                         ? 'bg-green-100 text-green-700' 
-                        : 'bg-yellow-100 text-yellow-700'
+                        : 'bg-red-100 text-red-700'
                     }`}>
+                      {selectedUser.accountStatus === 'ACTIVE' ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <XCircle className="w-4 h-4" />
+                      )}
                       {selectedUser.accountStatus}
                     </span>
                   </p>
@@ -295,6 +353,57 @@ const AdminDashboardContent = () => {
           toast.type === "success" ? "bg-green-500" : "bg-red-500"
         }`}>
           {toast.message}
+        </div>
+      )}
+
+      {/* Status Change Confirmation Modal */}
+      {statusChangeUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className={`${users.find(u => u.userId === statusChangeUserId)?.accountStatus === 'ACTIVE' ? 'bg-yellow-100' : 'bg-green-100'} p-4 rounded-full`}>
+                {users.find(u => u.userId === statusChangeUserId)?.accountStatus === 'ACTIVE' ? (
+                  <XCircle className="w-8 h-8 text-yellow-600" />
+                ) : (
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                )}
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              {users.find(u => u.userId === statusChangeUserId)?.accountStatus === 'ACTIVE' 
+                ? 'Deactivate User?' 
+                : 'Activate User?'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {users.find(u => u.userId === statusChangeUserId)?.accountStatus === 'ACTIVE'
+                ? 'The user will lose access to the system. They can be reactivated later.'
+                : 'The user will regain access to the system.'}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setStatusChangeUserId(null)}
+                className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const user = users.find(u => u.userId === statusChangeUserId);
+                  const newStatus = user?.accountStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+                  handleStatusChange(statusChangeUserId, newStatus);
+                }}
+                className={`px-6 py-2 text-white font-medium rounded-lg transition duration-200 ${
+                  users.find(u => u.userId === statusChangeUserId)?.accountStatus === 'ACTIVE'
+                    ? 'bg-yellow-500 hover:bg-yellow-600'
+                    : 'bg-green-500 hover:bg-green-600'
+                }`}
+              >
+                {users.find(u => u.userId === statusChangeUserId)?.accountStatus === 'ACTIVE' 
+                  ? 'Deactivate' 
+                  : 'Activate'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

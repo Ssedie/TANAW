@@ -61,4 +61,16 @@ public class ApiExceptionHandler {
         body.put("error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
+
+    @ExceptionHandler(UserIdNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUserNotFound(UserIdNotFoundException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", java.time.ZonedDateTime.now());
+        body.put("status", HttpStatus.NOT_FOUND.value());
+        body.put("error", "Not Found");
+        body.put("message", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
 }

@@ -4,6 +4,7 @@ import com.crud.tanaw.dto.ReqRep.AuthRequest;
 import com.crud.tanaw.dto.ReqRep.AuthResponse;
 import com.crud.tanaw.dto.ReqRep.RegisterRequest;
 import com.crud.tanaw.entities.User;
+import com.crud.tanaw.exceptions.UserIdNotFoundException;
 import com.crud.tanaw.services.JwtTokenService;
 import com.crud.tanaw.services.PasswordResetService;
 import com.crud.tanaw.services.UserService;
@@ -16,6 +17,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.crud.tanaw.exceptions.UserIdNotFoundException;
+
 
 import java.util.Map;
 
@@ -64,7 +67,7 @@ public class ApiAuthController {
         // Normal user login
         Long userId = Long.valueOf(request.user_id());
         User user = userService.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserIdNotFoundException("User not found"));
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(

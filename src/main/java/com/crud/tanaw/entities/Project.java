@@ -24,7 +24,7 @@ public class Project {
     @Temporal(TemporalType.DATE)
     private Date endDate;
 
-    private String allocatedBudget;
+    private Double allocatedBudget;
     private String projectStatus;
     private String feedback;
 
@@ -32,8 +32,6 @@ public class Project {
     @JoinColumn(name= "document_id")
     @JsonBackReference
     private Document document;
-
-
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_id")
@@ -63,8 +61,8 @@ public class Project {
     public Date getEndDate() { return endDate; }
     public void setEndDate(Date endDate) { this.endDate = endDate; }
 
-    public String getAllocatedBudget() { return allocatedBudget; }
-    public void setAllocatedBudget(String allocatedBudget) { this.allocatedBudget = allocatedBudget; }
+    public Double getAllocatedBudget() { return allocatedBudget; }
+    public void setAllocatedBudget(Double allocatedBudget) { this.allocatedBudget = allocatedBudget; }
 
     public String getProjectStatus() { return projectStatus; }
     public void setProjectStatus(String projectStatus) { this.projectStatus = projectStatus; }

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ProjectService {
@@ -33,7 +34,7 @@ public class ProjectService {
 
     public Project createProject(String projectName, String description,
                                  String startDateStr, String endDateStr,
-                                 String allocatedBudget, String projectStatus,
+                                 Double allocatedBudget, String projectStatus,
                                  User user, MultipartFile file) {
 
         Project project = new Project();
@@ -56,8 +57,7 @@ public class ProjectService {
                 Document document = new Document();
                 document.setDocumentTitle(file.getOriginalFilename());
                 document.setDocumentType(file.getContentType());
-                document.setContent(file.getBytes());
-                document.setUploadDate(new Date());
+                document.setContent("/uploads/" + UUID.randomUUID() + "_" + file.getOriginalFilename());
                 document.setUploader(user);
 
                 // Save document first

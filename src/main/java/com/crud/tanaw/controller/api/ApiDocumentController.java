@@ -1,5 +1,6 @@
 package com.crud.tanaw.controller.api;
 
+import com.crud.tanaw.entities.Budget;
 import com.crud.tanaw.entities.Document;
 import com.crud.tanaw.entities.User;
 import com.crud.tanaw.repositories.DocumentRepository;
@@ -12,15 +13,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/documents")
 public class ApiDocumentController {
 
-    private final DocumentRepository documentRepository;
     private final DocumentService documentService;
 
-    public ApiDocumentController(DocumentRepository documentRepository, DocumentService documentService) {
-        this.documentRepository = documentRepository;
+    public ApiDocumentController(DocumentService documentService) {
         this.documentService = documentService;
     }
 
@@ -31,40 +36,37 @@ public class ApiDocumentController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "totalBudget", required = false) Double totalBudget,
             Authentication auth
-    ) {
-        try {
-            if (!SecurityUtil.isAdmin(auth)) {
-                return ResponseEntity.status(403).build();
-            }
-
-            Integer currentUserId = SecurityUtil.getCurrentUserId(auth);
-            User uploader = new User();
-            uploader.setUserId(currentUserId);
-
-            Document doc = new Document();
-            doc.setDocumentTitle(title);
-            doc.setDocumentType(type);
-            doc.setContent(file.getBytes());
-            doc.setUploader(uploader);
-
-            // Only Project Plan has totalBudget
-            Document saved = documentService.uploadDocument(doc, type.equals("Project Plan") ? totalBudget : null);
-
-            return ResponseEntity.ok(saved);
-        } catch (Exception e) {
-            e.printStackTrace(); // For debugging
-            return ResponseEntity.status(500).body(null);
+    ) throws IOException {
+        if (!SecurityUtil.isAdmin(auth)) {
+            return ResponseEntity.status(403).build();
         }
+
+        Integer currentUserId = SecurityUtil.getCurrentUserId(auth);
+        User uploader = new User();
+        uploader.setUserId(currentUserId);
+
+        Document saved = documentService.uploadDocument(
+                file,
+                type,
+                title,
+                uploader,
+                type.equals("Project Plan") ? totalBudget : null
+        );
+
+        return ResponseEntity.ok(saved);
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> downloadDocument(@PathVariable Integer id) {
-        Document doc = documentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+    public ResponseEntity<byte[]> downloadDocument(@PathVariable Integer id) throws IOException {
+        Document doc = documentService.getDocument(id); // implement fetch from repository
+
+        Path filePath = Paths.get("uploads", Paths.get(doc.getContent()).getFileName().toString());
+        byte[] fileBytes = Files.readAllBytes(filePath);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + doc.getDocumentTitle() + "\"")
-                .contentType(MediaType.parseMediaType(doc.getDocumentType()))
-                .body(doc.getContent());
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(fileBytes);
     }
 }
+

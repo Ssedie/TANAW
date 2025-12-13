@@ -2,15 +2,26 @@ package com.crud.tanaw.services;
 
 import com.crud.tanaw.entities.Budget;
 import com.crud.tanaw.entities.Document;
+import com.crud.tanaw.entities.User;
 import com.crud.tanaw.repositories.BudgetRepository;
 import com.crud.tanaw.repositories.DocumentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class DocumentService {
+
+    private static final Path UPLOAD_PATH = Paths.get("uploads");
 
     private final DocumentRepository documentRepository;
     private final BudgetRepository budgetRepository;
@@ -21,24 +32,51 @@ public class DocumentService {
     }
 
     @Transactional
-    public Document uploadDocument(Document document, Double totalBudget) {
-        document.setUploadDate(new Date());
+    public Document uploadDocument(
+            MultipartFile file,
+            String documentType,
+            String documentTitle,
+            User user, Double totalBudget
+    ) throws IOException {
 
-        // Save the document first
-        Document savedDoc = documentRepository.save(document);
-
-        // If this document is an "Approved Budget", create a budget entry
-        if ("Approved Budget".equalsIgnoreCase(document.getDocumentType()) && totalBudget != null) {
-            Budget budget = new Budget();
-            budget.setTotalBudget(totalBudget);
-            budget.setTotalExpenses(0.0);
-            budget.setFiscalYear("FY " + new Date().getYear()); // you can make it dynamic
-            budget.setDescription("Auto-generated from document upload");
-            budget.setUploadDate(new Date());
-            budget.setDocument(savedDoc);
-            budgetRepository.save(budget);
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
         }
 
-        return savedDoc;
+        if (!Files.exists(UPLOAD_PATH)) {
+            Files.createDirectories(UPLOAD_PATH);
+        }
+
+        String originalName = file.getOriginalFilename();
+        String extension = "";
+
+        if (originalName != null && originalName.contains(".")) {
+            extension = originalName.substring(originalName.lastIndexOf("."));
+        }
+
+        String storedFileName = UUID.randomUUID() + extension;
+
+        Path filePath = UPLOAD_PATH.resolve(storedFileName);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        Document document = new Document();
+        document.setDocumentType(documentType);
+        document.setDocumentTitle(documentTitle);
+
+        // ✅ IMPORTANT: store web path, not disk path
+        document.setContent("/uploads/" + storedFileName);
+        document.setUploader(user);
+        if (totalBudget != null) {
+            Budget budget = new Budget();
+            budget.setTotalBudget(totalBudget);
+            document.addBudget(budget);
+        }
+
+        return documentRepository.save(document);
+    }
+
+    public Document getDocument(Integer id) {
+        return documentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Document not found with ID: " + id));
     }
 }

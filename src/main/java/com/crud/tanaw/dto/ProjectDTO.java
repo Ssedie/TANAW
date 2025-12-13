@@ -12,7 +12,7 @@ public class ProjectDTO {
     @NotBlank(message = "Please provide a description of the project.")
     private String description;
     @NotBlank(message = "Please provide the actual budget allocated for the project.")
-    private String allocatedBudget;
+    private Double allocatedBudget;
     @NotBlank(message = "Please set the project status correctly.")
     private String projectStatus;
     @NotBlank(message = "Please provide some feedback for the project.")
@@ -36,11 +36,11 @@ public class ProjectDTO {
         this.description = description;
     }
 
-    public String getAllocatedBudget() {
+    public Double getAllocatedBudget() {
         return allocatedBudget;
     }
 
-    public void setAllocatedBudget(String allocatedBudget) {
+    public void setAllocatedBudget(Double allocatedBudget) {
         this.allocatedBudget = allocatedBudget;
     }
 

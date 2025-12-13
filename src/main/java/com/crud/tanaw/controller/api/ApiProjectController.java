@@ -8,6 +8,7 @@ import com.crud.tanaw.entities.User;
 import com.crud.tanaw.repositories.DocumentRepository;
 import com.crud.tanaw.repositories.ProjectRepository;
 import com.crud.tanaw.repositories.UserRepository;
+import com.crud.tanaw.services.DocumentService;
 import com.crud.tanaw.utility.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,11 +23,15 @@ import jakarta.validation.constraints.NotBlank;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/projects")
 public class ApiProjectController {
+
+    @Autowired
+    private DocumentService documentService;
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -50,13 +55,13 @@ public class ApiProjectController {
     // --- Add new project with optional file upload ---
     @PostMapping
     public ResponseEntity<?> addProject(
-            @RequestParam @NotBlank(message = "Project name is required") String projectName,
-            @RequestParam @NotBlank(message = "Description is required") String description,
-            @RequestParam @NotBlank(message = "Allocated budget is required") String allocatedBudget,
-            @RequestParam @NotBlank(message = "Project status is required") String projectStatus,
-            @RequestParam(required = false) String feedback,
+            @RequestParam @NotBlank String projectName,
+            @RequestParam @NotBlank String description,
+            @RequestParam @NotBlank Double allocatedBudget,
+            @RequestParam @NotBlank String projectStatus,
             @RequestParam(required = false) MultipartFile document,
             @RequestParam Long userId,
+            @RequestParam Long planDocumentId,
             Authentication auth
     ) {
         try {
@@ -65,27 +70,38 @@ public class ApiProjectController {
                         .body("Only admins can create projects.");
             }
 
-            // Check user existence
             User user = userRepository.findById(userId.intValue())
                     .orElseThrow(() -> new RuntimeException("User not found"));
+
+            Document planDoc = documentRepository.findById(planDocumentId.intValue())
+                    .orElseThrow(() -> new RuntimeException("Project Plan not found"));
+
+            // Validate allocated budget
+            double usedBudget = projectRepository.findByDocument(planDoc)
+                    .stream()
+                    .mapToDouble(Project::getAllocatedBudget)
+                    .sum();
+
+            double remainingBudget = planDoc.getTotalBudget() - usedBudget;
+            if (allocatedBudget > remainingBudget) {
+                return ResponseEntity.badRequest()
+                        .body("Allocated budget exceeds remaining plan budget");
+            }
 
             Project project = new Project();
             project.setProjectName(projectName);
             project.setDescription(description);
-            project.setAllocatedBudget(allocatedBudget);
+            project.setAllocatedBudget((allocatedBudget));
             project.setProjectStatus(projectStatus);
-            project.setFeedback(feedback);
             project.setUser(user);
+            project.setDocument(planDoc);
 
-            // Handle file upload
             if (document != null && !document.isEmpty()) {
                 Document doc = new Document();
                 doc.setDocumentTitle(document.getOriginalFilename());
                 doc.setDocumentType(document.getContentType());
-                doc.setContent(document.getBytes());
-                doc.setUploadDate(new Date());
+                doc.setContent("/uploads/" + UUID.randomUUID() + "_" + document.getOriginalFilename());
                 doc.setUploader(user);
-
                 Document savedDoc = documentRepository.save(doc);
                 project.setDocument(savedDoc);
             }
@@ -98,6 +114,7 @@ public class ApiProjectController {
                     .body("Error creating project: " + e.getMessage());
         }
     }
+
 
     private static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MM-dd");
 

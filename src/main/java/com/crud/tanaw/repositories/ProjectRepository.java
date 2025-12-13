@@ -1,5 +1,6 @@
 package com.crud.tanaw.repositories;
 
+import com.crud.tanaw.entities.Document;
 import com.crud.tanaw.entities.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,8 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     List<Project> findByUserUserId(Integer userId);
 
     Long countByProjectStatus(String status);
+
+    List<Project> findByDocument(Document document);
 
     @Query("SELECT COUNT(p) FROM Project p WHERE p.endDate >= ?1")
     Long countOnTime(Date today);

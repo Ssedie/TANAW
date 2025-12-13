@@ -76,30 +76,35 @@ public class DashboardService {
             // allocatedBudget is String in your entity -- try to parse to double
             Double allocated = 0.0;
             try {
-                allocated = Double.parseDouble(Optional.ofNullable(p.getAllocatedBudget()).orElse("0").replaceAll("[^0-9.]", ""));
-            } catch (Exception ignored) {}
+                if (p.getAllocatedBudget() != null) {
+                    allocated = p.getAllocatedBudget();
+                }
+            } catch (NumberFormatException ignored) {}
             dto.setAllocatedBudget(allocated);
 
             // Calculate spentBudget by looking up budgets linked to the project's document if any
-            Double spent = 0.0;
-            if (p.getDocument() != null && p.getDocument().getBudgets() != null) {
-                for (Budget b : p.getDocument().getBudgets()) {
-                    if (b.getTotalExpenses() != null) spent += b.getTotalExpenses();
+            double spent = 0.0;
+            if (p.getActivities() != null) {
+                for (Activity a : p.getActivities()) {
+                    if ("Expense".equals(a.getType()) && a.getExpenses() != null) {
+                        spent += a.getExpenses();
+                    }
                 }
             }
+
             dto.setSpentBudget(spent);
 
             // progress estimation: if allocated > 0, progress = min(100, (spent/allocated)*100), else try based on dates
             double progress = 0;
             if (allocated > 0) {
-                progress = Math.min(100, Math.round((spent / allocated) * 100));
+                progress = Math.min(100, (spent / allocated) * 100);
             } else if (p.getStartDate() != null && p.getEndDate() != null) {
                 long total = p.getEndDate().getTime() - p.getStartDate().getTime();
                 long passed = new Date().getTime() - p.getStartDate().getTime();
-                if (total > 0) progress = Math.max(0, Math.min(100, Math.round((double) passed / total * 100)));
-            } else {
-                progress = 0.0;
+                if (total > 0) progress = Math.max(0, Math.min(100, ((double) passed / total) * 100));
             }
+            dto.setProgress(progress);
+
             dto.setProgress(progress);
 
             dto.setStatus(p.getProjectStatus());

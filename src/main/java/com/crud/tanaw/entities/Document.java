@@ -18,11 +18,18 @@ public class Document {
     private String documentType;
     private String documentTitle;
 
-    @Lob
-    private byte[] content;
+    private String content;
+
+    private Double totalBudget;
 
     @Temporal(TemporalType.TIMESTAMP)
+    @Column(nullable = false, updatable = false)
     private Date uploadDate;
+
+    @PrePersist
+    protected void onCreate() {
+        this.uploadDate = new Date();
+    }
 
     @OneToMany(mappedBy = "document")
     @JsonManagedReference
@@ -48,7 +55,6 @@ public class Document {
     public void setDocumentTitle(String documentTitle) { this.documentTitle = documentTitle; }
 
     public Date getUploadDate() { return uploadDate; }
-    public void setUploadDate(Date uploadDate) { this.uploadDate = uploadDate; }
 
     public List<Budget> getBudgets() { return budgets; }
     public void setBudgets(List<Budget> budgets) { this.budgets = budgets; }
@@ -59,11 +65,24 @@ public class Document {
     public User getUploader() { return uploader; }
     public void setUploader(User uploader) { this.uploader = uploader; }
 
-    public byte[] getContent() {
+    public String getContent() {
         return content;
     }
 
-    public void setContent(byte[] content) {
+    public void setContent(String content) {
         this.content = content;
+    }
+
+    public void addBudget(Budget budget) {
+        budget.setDocument(this);
+        this.budgets.add(budget);
+    }
+
+    public Double getTotalBudget() {
+        return totalBudget;
+    }
+
+    public void setTotalBudget(Double totalBudget) {
+        this.totalBudget = totalBudget;
     }
 }

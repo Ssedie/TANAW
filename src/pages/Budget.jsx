@@ -48,10 +48,11 @@ export default function Budget() {
   });
 
   const budgetByStatus = projects.reduce((acc, p) => {
-    const status = p.projectStatus || "UNKNOWN";
-    acc[status] = (acc[status] || 0) + Number((p.allocatedBudget || "0").replace(/[^0-9.]/g, ""));
-    return acc;
-  }, {});
+  const status = p.projectStatus || "UNKNOWN";
+  acc[status] = (acc[status] || 0) + (p.allocatedBudget || 0);
+  return acc;
+}, {});
+
 
   const chartData = Object.entries(budgetByStatus).map(([status, amount]) => ({ projectStatus: status, allocatedBudget: amount }));
 
@@ -62,32 +63,6 @@ export default function Budget() {
   return (
     <div className="p-8 min-h-screen bg-gray-50">
       <h1 className="text-4xl font-bold text-[#4B3A2F] mb-6">Budget Overview</h1>
-
-      {/* Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {loading ? Array(3).fill(0).map((_, i) => <SkeletonLoader key={i} className="h-24" />) :
-          <>
-            <Card>
-              <h3 className="text-sm text-gray-500">Total Budget</h3>
-              <p className="text-2xl font-bold mt-2">₱{totalBudget.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 mt-1">Spent: ₱{totalSpent.toLocaleString()}</p>
-              <p className="text-xs text-gray-500">Remaining: ₱{remaining.toLocaleString()}</p>
-            </Card>
-
-            <Card>
-              <h3 className="text-sm text-gray-500">Projects</h3>
-              <p className="text-2xl font-bold mt-2">{projects.length}</p>
-            </Card>
-
-            <Card>
-              <h3 className="text-sm text-gray-500">Statuses</h3>
-              {Object.keys(budgetByStatus).map(status => (
-                <p key={status} className="text-xs">{status}: ₱{budgetByStatus[status].toLocaleString()}</p>
-              ))}
-            </Card>
-          </>
-        }
-      </div>
 
       {/* Chart */}
       <Card className="mb-8 h-72">
@@ -104,26 +79,6 @@ export default function Budget() {
           </ResponsiveContainer>
         ) : loading ? <SkeletonLoader className="h-full" /> : <p>No project data</p>}
       </Card>
-
-      {/* Projects List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {loading ? Array(3).fill(0).map((_, i) => <SkeletonLoader key={i} className="h-48" />) :
-          projects.map(proj => {
-            const allocated = Number((proj.allocatedBudget || "0").replace(/[^0-9.]/g, ""));
-            const spent = projectSpentMap[proj.projectId] || 0;
-            return (
-              <Card key={proj.projectId}>
-                <h3 className="text-xl font-semibold">{proj.projectName}</h3>
-                <p>{proj.description}</p>
-                <p><strong>Allocated:</strong> ₱{allocated.toLocaleString()}</p>
-                <p><strong>Spent:</strong> ₱{spent.toLocaleString()}</p>
-                <p><strong>Status:</strong> {proj.projectStatus}</p>
-                <p><strong>Feedback:</strong> {proj.feedback}</p>
-              </Card>
-            );
-          })
-        }
-      </div>
     </div>
   );
 }

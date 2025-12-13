@@ -255,8 +255,16 @@ const AdminDashboardContent = () => {
                   <p className="text-gray-900 font-medium mt-2">{selectedUser.birthDate || "-"}</p>
                 </div>
                 <div>
+                  <label className="text-xs text-gray-500 uppercase font-semibold tracking-wide">First Name</label>
+                  <p className="text-gray-900 font-medium mt-2">{selectedUser.fname || "-"}</p>
+                </div>
+                <div>
                   <label className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Middle Name</label>
                   <p className="text-gray-900 font-medium mt-2">{selectedUser.mname || "-"}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Last Name</label>
+                  <p className="text-gray-900 font-medium mt-2">{selectedUser.lname || "-"}</p>
                 </div>
               </div>
 

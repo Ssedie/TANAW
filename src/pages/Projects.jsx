@@ -49,6 +49,27 @@ function Projects() {
       .finally(() => setLoading(false));
   }, [auth]);
 
+  useEffect(() => {
+    if (!auth?.token || projects.length === 0) return;
+    const headers = { Authorization: `Bearer ${auth.token}` };
+    setLoading(true);
+
+    const fetchActivities = async () => {
+      const map = {};
+      for (const proj of projects) {
+        try {
+          const res = await axios.get(`${API_URL}/api/activities/project/${proj.projectId}`, { headers });
+          map[proj.projectId] = res.data;
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      setActivitiesMap(map);
+    };
+
+    fetchActivities();
+  }, [projects, auth]);
+
   // --- Update available budget ---
   useEffect(() => {
     if (!selectedPlanId) return;

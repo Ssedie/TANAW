@@ -4,6 +4,7 @@ import com.crud.tanaw.dto.ActivityDTO;
 import com.crud.tanaw.dto.dashboardDTO.*;
 import com.crud.tanaw.entities.Project;
 import com.crud.tanaw.repositories.DashboardRepository;
+import com.crud.tanaw.repositories.DocumentRepository;
 import com.crud.tanaw.repositories.ProjectRepository;
 import com.crud.tanaw.services.DashboardService;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -21,6 +24,7 @@ public class ApiDashboardController {
     private final DashboardRepository dashboardRepository;
     private final DashboardService dashboardService;
     private final ProjectRepository projectRepository;
+    private final DocumentRepository documentRepository;
 
     // --- Users by status ---
     @GetMapping("/users-by-status")
@@ -80,5 +84,13 @@ public class ApiDashboardController {
     @GetMapping("/activities")
     public List<ActivityDTO> getRecentActivities() {
         return dashboardRepository.findRecentActivities();
+    }
+
+    @GetMapping("/total-budget")
+    public ResponseEntity<Map<String, Double>> getTotalBudget() {
+        Double totalBudget = documentRepository.getTotalProjectPlanBudget();
+        Map<String, Double> response = new HashMap<>();
+        response.put("totalBudget", totalBudget != null ? totalBudget : 0.0);
+        return ResponseEntity.ok(response);
     }
 }

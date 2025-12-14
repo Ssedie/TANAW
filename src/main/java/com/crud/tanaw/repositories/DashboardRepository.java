@@ -64,8 +64,11 @@ public interface DashboardRepository extends JpaRepository<Project, Integer> {
     List<FeedbackWithRepliesDTO> findFeedbacksWithRepliesByProject(Integer projectId);
 
     // --- Optional: recent activities (if you implement ActivityDTO) ---
-    @Query("SELECT new com.crud.tanaw.dto.ActivityDTO(a.activityId, a.activityName, a.description, a.date, a.status, a.expenses, a.project.projectId) " +
+    @Query("SELECT new com.crud.tanaw.dto.ActivityDTO(" +
+            "a.activityId, a.activityName, a.description, a.date, a.status, a.expenses, " +
+            "p.projectId, p.projectName, a.type) " +
             "FROM Activity a " +
+            "LEFT JOIN a.project p " +
             "ORDER BY a.date DESC")
     List<ActivityDTO> findRecentActivities();
 

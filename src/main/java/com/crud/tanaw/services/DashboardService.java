@@ -9,10 +9,7 @@ import com.crud.tanaw.entities.Activity;
 import com.crud.tanaw.entities.Budget;
 import com.crud.tanaw.entities.Feedback;
 import com.crud.tanaw.entities.Project;
-import com.crud.tanaw.repositories.ActivityRepository;
-import com.crud.tanaw.repositories.BudgetRepository;
-import com.crud.tanaw.repositories.FeedbackRepository;
-import com.crud.tanaw.repositories.ProjectRepository;
+import com.crud.tanaw.repositories.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,15 +29,18 @@ public class DashboardService {
     private final ProjectRepository projectRepo;
     private final ActivityRepository activityRepo;
     private final FeedbackRepository feedbackRepo;
+    private final DocumentRepository documentRepo;
 
     public DashboardService(BudgetRepository budgetRepo,
                             ProjectRepository projectRepo,
                             ActivityRepository activityRepo,
-                            FeedbackRepository feedbackRepo) {
+                            FeedbackRepository feedbackRepo,
+                            DocumentRepository documentRepo) {
         this.budgetRepo = budgetRepo;
         this.projectRepo = projectRepo;
         this.activityRepo = activityRepo;
         this.feedbackRepo = feedbackRepo;
+        this.documentRepo = documentRepo;
     }
 
     public DashboardOverviewDTO getOverview() {
@@ -146,5 +146,10 @@ public class DashboardService {
 
     public List<Feedback> getFeedbacksForProject(Integer projectId) {
         return feedbackRepo.findByProjectIdOrderByUploadDateDesc(projectId);
+    }
+
+    public Double getTotalBudget() {
+        Double total = documentRepo.getTotalProjectPlanBudget();
+        return total != null ? total : 0.0;
     }
 }

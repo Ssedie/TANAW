@@ -24,9 +24,24 @@ import java.util.List;
 public class ApiDocumentController {
 
     private final DocumentService documentService;
+    private final DocumentRepository documentRepository;
 
-    public ApiDocumentController(DocumentService documentService) {
+    public ApiDocumentController(DocumentService documentService, DocumentRepository documentRepository) {
         this.documentService = documentService;
+        this.documentRepository = documentRepository;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Document>> getDocuments(
+            @RequestParam(required = false) String type
+    ) {
+
+        if (type != null) {
+            return ResponseEntity.ok(
+                    documentRepository.findByDocumentType(type)
+            );
+        }
+        return ResponseEntity.ok(documentRepository.findAll());
     }
 
     @PostMapping("/upload")
@@ -40,6 +55,11 @@ public class ApiDocumentController {
         if (!SecurityUtil.isAdmin(auth)) {
             return ResponseEntity.status(403).build();
         }
+        if ("Project Plan".equals(type) && totalBudget == null) {
+            return ResponseEntity.badRequest()
+                    .body(null);
+        }
+
 
         Integer currentUserId = SecurityUtil.getCurrentUserId(auth);
         User uploader = new User();
@@ -52,6 +72,8 @@ public class ApiDocumentController {
                 uploader,
                 type.equals("Project Plan") ? totalBudget : null
         );
+
+        System.out.println("TOTAL BUDGET RECEIVED: " + totalBudget);
 
         return ResponseEntity.ok(saved);
     }
@@ -68,5 +90,7 @@ public class ApiDocumentController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(fileBytes);
     }
+
+
 }
 

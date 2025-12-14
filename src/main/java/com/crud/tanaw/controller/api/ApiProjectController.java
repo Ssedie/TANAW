@@ -10,6 +10,7 @@ import com.crud.tanaw.repositories.ProjectRepository;
 import com.crud.tanaw.repositories.UserRepository;
 import com.crud.tanaw.services.DocumentService;
 import com.crud.tanaw.utility.SecurityUtil;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -57,7 +58,8 @@ public class ApiProjectController {
     public ResponseEntity<?> addProject(
             @RequestParam @NotBlank String projectName,
             @RequestParam @NotBlank String description,
-            @RequestParam @NotBlank Double allocatedBudget,
+            @RequestParam @NotBlank String projectType,
+            @RequestParam @NotNull Double allocatedBudget,
             @RequestParam @NotBlank String projectStatus,
             @RequestParam(required = false) MultipartFile document,
             @RequestParam Long userId,
@@ -91,6 +93,7 @@ public class ApiProjectController {
             Project project = new Project();
             project.setProjectName(projectName);
             project.setDescription(description);
+            project.setProjectType(projectType);
             project.setAllocatedBudget((allocatedBudget));
             project.setProjectStatus(projectStatus);
             project.setUser(user);
@@ -124,6 +127,7 @@ public class ApiProjectController {
         dto.setProjectId(p.getProjectId());
         dto.setProjectName(p.getProjectName());
         dto.setDescription(p.getDescription());
+        dto.setProjectType(p.getProjectType());
         dto.setAllocatedBudget(p.getAllocatedBudget());
         dto.setProjectStatus(p.getProjectStatus());
         dto.setFeedback(p.getFeedback());

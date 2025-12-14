@@ -18,6 +18,9 @@ public class Project {
     private String projectName;
     private String description;
 
+    @Column(nullable = false)
+    private String projectType;
+
     @Temporal(TemporalType.DATE)
     private Date startDate;
 
@@ -85,5 +88,13 @@ public class Project {
 
     public void setActivities(List<Activity> activities) {
         this.activities = activities;
+    }
+
+    public String getProjectType() {
+        return projectType;
+    }
+
+    public void setProjectType(String projectType) {
+        this.projectType = projectType;
     }
 }

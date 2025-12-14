@@ -67,16 +67,20 @@ public class DocumentService {
         document.setContent("/uploads/" + storedFileName);
         document.setUploader(user);
         if (totalBudget != null) {
-            Budget budget = new Budget();
-            budget.setTotalBudget(totalBudget);
-            document.addBudget(budget);
+            document.setTotalBudget(totalBudget);
         }
 
         return documentRepository.save(document);
+    }
+
+    public List<Document> getAllDocuments() {
+        return documentRepository.findAll();
     }
 
     public Document getDocument(Integer id) {
         return documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document not found with ID: " + id));
     }
+
+
 }

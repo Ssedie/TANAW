@@ -1,23 +1,36 @@
 package com.crud.tanaw.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.util.List;
 
 public class ProjectDTO {
 
     Integer projectId;
+
     @NotBlank(message = "Please provide the name of the project.")
     private String projectName;
+
     @NotBlank(message = "Please provide a description of the project.")
     private String description;
-    @NotBlank(message = "Please provide the actual budget allocated for the project.")
+
+    @NotBlank(message = "Please select the project type.")
+    private String projectType;
+
+    @NotNull(message = "Please provide the actual budget allocated for the project.")
+    @Positive(message = "Budget must be greater than 0")
     private Double allocatedBudget;
+
     @NotBlank(message = "Please set the project status correctly.")
     private String projectStatus;
+
     @NotBlank(message = "Please provide some feedback for the project.")
     private String feedback;
+
     Integer documentId;
+
     private List<ActivityDTO> activities;
 
     public String getProjectName() {
@@ -76,4 +89,12 @@ public class ProjectDTO {
 
     public List<ActivityDTO> getActivities() { return activities; }
     public void setActivities(List<ActivityDTO> activities) { this.activities = activities; }
+
+    public String getProjectType() {
+        return projectType;
+    }
+
+    public void setProjectType(String projectType) {
+        this.projectType = projectType;
+    }
 }

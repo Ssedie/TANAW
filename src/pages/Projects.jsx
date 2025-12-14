@@ -20,7 +20,8 @@ function Projects() {
   // --- New Project Form ---
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
-  const [allocatedBudget, setAllocatedBudget] = useState("");
+  const [allocatedBudget, setAllocatedBudget] = useState(0);
+  const [projectType, setProjectType] = useState("");
   const [projectStatus, setProjectStatus] = useState("ONGOING");
   const [documentFile, setDocumentFile] = useState(null);
   const [documentPreview, setDocumentPreview] = useState(null);
@@ -71,15 +72,24 @@ function Projects() {
     fetchActivities();
   }, [projects, auth]);
 
-  // --- Update available budget ---
   useEffect(() => {
-    if (!selectedPlanId) return;
+    if (!selectedPlanId) {
+      setAvailableBudget(0);
+      return;
+    }
+
+    // Find the plan selected
     const plan = plans.find(p => p.documentId === Number(selectedPlanId));
     if (!plan) return;
-    const used = projects
-      .filter(p => p.planDocumentId === plan.documentId)
+
+    // Sum allocated budgets of projects using this plan
+    const usedBudget = projects
+      .filter(p => p.documentId === plan.documentId)
       .reduce((sum, p) => sum + Number(p.allocatedBudget || 0), 0);
-    setAvailableBudget(plan.totalBudget - used);
+
+    // Compute available budget
+    const remaining = plan.totalBudget - usedBudget;
+    setAvailableBudget(remaining > 0 ? remaining : 0);
   }, [selectedPlanId, projects, plans]);
 
   // --- File Preview ---
@@ -91,6 +101,15 @@ function Projects() {
       reader.onloadend = () => setDocumentPreview(reader.result);
       reader.readAsDataURL(file);
     } else setDocumentPreview(null);
+  };
+
+  const handleBudgetChange = (e) => {
+    const value = Number(e.target.value);
+    if (value > availableBudget) {
+      alert("Allocated budget exceeds available budget for this project plan!");
+      return;
+    }
+    setAllocatedBudget(value);
   };
 
   // --- Add Project ---
@@ -109,6 +128,7 @@ function Projects() {
     formData.append("projectName", projectName);
     formData.append("description", description);
     formData.append("allocatedBudget", allocatedBudget);
+    formData.append("projectType", projectType);
     formData.append("projectStatus", projectStatus);
     formData.append("planDocumentId", selectedPlanId);
     if (documentFile) formData.append("document", documentFile);
@@ -124,6 +144,7 @@ function Projects() {
       setProjectName("");
       setDescription("");
       setAllocatedBudget("");
+      setProjectType("");
       setProjectStatus("ONGOING");
       setDocumentFile(null);
       setDocumentPreview(null);
@@ -239,14 +260,27 @@ function Projects() {
               <option value="" disabled>Select a Project Plan</option>
               {plans.map(plan => (
                 <option key={plan.documentId} value={plan.documentId}>
-                  {plan.documentTitle} - Total Budget: ₱{plan.totalBudget.toLocaleString()}
+                  {plan.documentTitle} - Total Budget: ₱{(plan.totalBudget ?? 0).toLocaleString()}
                 </option>
               ))}
             </select>
 
             <input type="text" placeholder="Project Name" value={projectName} onChange={e => setProjectName(e.target.value)} className="p-3 border rounded" required />
             <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} className="p-3 border rounded" required />
-            <input type="number" placeholder="Allocated Budget" value={allocatedBudget} onChange={e => setAllocatedBudget(e.target.value)} className="p-3 border rounded" max={availableBudget} required />
+            <select
+              value={projectType || ""}
+              onChange={e => setProjectType(e.target.value)}
+              className="p-3 border rounded"
+              required
+            >
+              <option value="" disabled>Select Project Type</option>
+              <option value="INFRASTRUCTURE">Infrastructure</option>
+              <option value="HEALTH">Health</option>
+              <option value="EDUCATION">Education</option>
+              <option value="ENVIRONMENT">Environment</option>
+              <option value="GENERAL">General</option>
+            </select>
+            <input type="number" placeholder="Allocated Budget" value={allocatedBudget} onChange={handleBudgetChange} className="p-3 border rounded" max={availableBudget} required />
             <select value={projectStatus} onChange={e => setProjectStatus(e.target.value)} className="p-3 border rounded">
               <option value="ONGOING">ONGOING</option>
               <option value="COMPLETED">COMPLETED</option>
@@ -280,6 +314,10 @@ function Projects() {
 
               {/* Project Info */}
               <div className="grid grid-cols-2 gap-4 mb-6 py-4 border-y border-gray-200">
+                <div>
+                  <p className="text-sm text-gray-500">Type</p>
+                  <p className="text-lg font-semibold text-[#4B3A2F]">{proj.projectType || "General"}</p>
+                </div>
                 <div>
                   <p className="text-sm text-gray-500">Allocated Budget</p>
                   <p className="text-lg font-semibold text-[#FF6404]">₱{Number(proj.allocatedBudget).toLocaleString()}</p>
@@ -381,8 +419,8 @@ function Projects() {
                         className="p-2 border rounded mb-2 w-full text-sm"
                       />
                     )}
-                    <button 
-                      onClick={() => handleAddActivity(proj.projectId)} 
+                    <button
+                      onClick={() => handleAddActivity(proj.projectId)}
                       className="px-4 py-2 bg-[#4B3A2F] text-white rounded text-sm font-semibold hover:bg-[#3a2d23]"
                     >
                       Add Activity
@@ -416,17 +454,17 @@ function Projects() {
                       placeholder="Tell us about your experience with this project..."
                       rows="3"
                     />
-                    
+
                     <div className="flex items-center justify-between">
                       <div>
                         <label className="block text-sm font-semibold text-[#4B3A2F] mb-2">Rate this project</label>
-                        <StarRating 
+                        <StarRating
                           value={ratingInputMap[proj.projectId] || 0}
                           onChange={(val) => setRatingInputMap(prev => ({ ...prev, [proj.projectId]: val }))}
                         />
                       </div>
-                      <button 
-                        onClick={() => handleAddFeedback(proj.projectId)} 
+                      <button
+                        onClick={() => handleAddFeedback(proj.projectId)}
                         className="px-6 py-2 bg-[#FF6404] text-white rounded-lg font-semibold hover:bg-[#e55a00] h-fit"
                       >
                         Submit

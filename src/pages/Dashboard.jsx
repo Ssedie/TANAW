@@ -9,6 +9,7 @@ function Dashboard() {
   const { auth } = useAuth();
   const [projects, setProjects] = useState([]);
   const [activities, setActivities] = useState([]);
+  const [totalBudget, setTotalBudget] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // --- Fetch projects and activities ---
@@ -21,6 +22,10 @@ function Dashboard() {
       .then(res => setProjects(res.data))
       .catch(console.error);
 
+    axios.get(`${API_URL}/api/dashboard/total-budget`, { headers }
+      ).then(res => setTotalBudget(res.data.totalBudget))
+      .catch(console.error);
+
     axios.get(`${API_URL}/api/activities/recent`, { headers })
       .then(res => setActivities(res.data))
       .catch(console.error)
@@ -28,7 +33,6 @@ function Dashboard() {
   }, [auth]);
 
   // --- Budget Calculations ---
-  const totalBudget = projects.reduce((sum, p) => sum + Number(p.allocatedBudget || 0), 0);
   const totalSpent = projects.reduce((sum, p) => {
     const spent = (p.activities || []).reduce((aSum, a) => aSum + Number(a.expenses || 0), 0);
     return sum + spent;
@@ -60,7 +64,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-2">Total Budget</h2>
-          <p className="text-2xl font-bold">₱{totalBudget.toLocaleString()}</p>
+          <p className="text-2xl font-bold">₱{Number(totalBudget).toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-2">Total Spent</h2>

@@ -2,10 +2,14 @@ package com.crud.tanaw.controller.api;
 
 import com.crud.tanaw.dto.ActivityDTO;
 import com.crud.tanaw.dto.ProjectDTO;
+import com.crud.tanaw.dto.ReqRep.FeedbackRequest;
+import com.crud.tanaw.dto.ReqRep.FeedbackResponseDTO;
 import com.crud.tanaw.entities.Document;
+import com.crud.tanaw.entities.Feedback;
 import com.crud.tanaw.entities.Project;
 import com.crud.tanaw.entities.User;
 import com.crud.tanaw.repositories.DocumentRepository;
+import com.crud.tanaw.repositories.FeedbackRepository;
 import com.crud.tanaw.repositories.ProjectRepository;
 import com.crud.tanaw.repositories.UserRepository;
 import com.crud.tanaw.services.DocumentService;
@@ -36,6 +40,9 @@ public class ApiProjectController {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private FeedbackRepository feedbackRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -117,6 +124,61 @@ public class ApiProjectController {
                     .body("Error creating project: " + e.getMessage());
         }
     }
+
+    @GetMapping("/{projectId}/feedbacks")
+    public ResponseEntity<List<FeedbackResponseDTO>> getFeedbacks(
+            @PathVariable Integer projectId
+    ) {
+        return ResponseEntity.ok(
+                feedbackRepository
+                        .findByProjectIdOrderByUploadDateDesc(projectId)
+                        .stream()
+                        .map(this::convertToDTO)
+                        .toList()
+        );
+    }
+
+
+    @PostMapping("/{projectId}/feedbacks")
+    public ResponseEntity<?> addFeedback(
+            @PathVariable Integer projectId,
+            @RequestBody FeedbackRequest request,
+            Authentication auth
+    ) {
+        if (!SecurityUtil.isCitizen(auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Feedback feedback = new Feedback();
+        feedback.setContent(request.getContent());
+        feedback.setRating(request.getRating());
+        feedback.setUser(user);
+        feedback.setProject(project);
+        feedback.setUploadDate(new Date());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(convertToDTO(feedbackRepository.save(feedback)));
+    }
+
+    private FeedbackResponseDTO convertToDTO(Feedback f) {
+        FeedbackResponseDTO dto = new FeedbackResponseDTO();
+        dto.setFeedbackId(f.getFeedbackId());
+        dto.setContent(f.getContent());
+        dto.setUploadDate(f.getUploadDate());
+
+        if (f.getProject() != null) {
+            dto.setProjectId(f.getProject().getProjectId());
+        }
+
+        return dto;
+    }
+
 
 
     private static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MM-dd");

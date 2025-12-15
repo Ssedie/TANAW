@@ -12,10 +12,18 @@ public class Feedback {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer feedbackId;
 
+    @Column(nullable = false, length = 1000)
     private String content;
+
+    @Column(nullable = false)
+    private int rating;
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date uploadDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="reply_id")
@@ -42,4 +50,20 @@ public class Feedback {
 
     public Project getProject() { return project; }
     public void setProject(Project project) { this.project = project; }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public int getRating() {
+        return rating;
+    }
+
+    public void setRating(int rating) {
+        this.rating = rating;
+    }
 }

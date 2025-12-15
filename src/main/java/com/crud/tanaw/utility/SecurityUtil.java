@@ -16,4 +16,7 @@ public class SecurityUtil {
     public static boolean isAdmin(Authentication auth) {
         return "ADMIN".equals(getCurrentUserRole(auth));
     }
+    public static boolean isCitizen(Authentication auth) {
+        return "CITIZEN".equals(getCurrentUserRole(auth));
+    }
 }

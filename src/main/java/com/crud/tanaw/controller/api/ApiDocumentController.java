@@ -1,5 +1,6 @@
 package com.crud.tanaw.controller.api;
 
+import com.crud.tanaw.dto.DocumentDTO;
 import com.crud.tanaw.entities.Budget;
 import com.crud.tanaw.entities.Document;
 import com.crud.tanaw.entities.User;
@@ -32,16 +33,16 @@ public class ApiDocumentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Document>> getDocuments(
+    public ResponseEntity<List<DocumentDTO>> getDocuments(
             @RequestParam(required = false) String type
     ) {
-
+        List<Document> docs;
         if (type != null) {
-            return ResponseEntity.ok(
-                    documentRepository.findByDocumentType(type)
-            );
+            docs = documentRepository.findByDocumentType(type);
+        } else {
+            docs = documentRepository.findAll();
         }
-        return ResponseEntity.ok(documentRepository.findAll());
+        return ResponseEntity.ok(docs.stream().map(this::toDto).toList());
     }
 
     @PostMapping("/upload")
@@ -89,6 +90,15 @@ public class ApiDocumentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + doc.getDocumentTitle() + "\"")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(fileBytes);
+    }
+
+    private DocumentDTO toDto(Document doc) {
+        DocumentDTO dto = new DocumentDTO();
+        dto.setDocumentId(doc.getDocumentId());
+        dto.setDocumentTitle(doc.getDocumentTitle());
+        dto.setDocumentType(doc.getDocumentType());
+        dto.setTotalBudget(doc.getTotalBudget());
+        return dto;
     }
 
 

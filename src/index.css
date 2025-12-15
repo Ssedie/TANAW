@@ -2,3 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+.slick-slider,
+.slick-list,
+.slick-track {
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.slick-slide > div {
+  width: 100%;
+}

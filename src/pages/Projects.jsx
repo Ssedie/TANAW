@@ -78,16 +78,13 @@ function Projects() {
       return;
     }
 
-    // Find the plan selected
     const plan = plans.find(p => p.documentId === Number(selectedPlanId));
     if (!plan) return;
 
-    // Sum allocated budgets of projects using this plan
     const usedBudget = projects
       .filter(p => p.documentId === plan.documentId)
       .reduce((sum, p) => sum + Number(p.allocatedBudget || 0), 0);
 
-    // Compute available budget
     const remaining = plan.totalBudget - usedBudget;
     setAvailableBudget(remaining > 0 ? remaining : 0);
   }, [selectedPlanId, projects, plans]);
@@ -245,7 +242,19 @@ function Projects() {
   );
 
   // --- Carousel Settings ---
-  const sliderSettings = { dots: true, infinite: false, speed: 500, slidesToShow: 1, slidesToScroll: 1 };
+  const sliderSettings = {
+    dots: true,
+    infinite: false,
+    speed: 500,
+    slidesToShow: 2.2,
+    slidesToScroll: 1,
+    swipeToSlide: true,
+    responsive: [
+      { breakpoint: 1024, settings: { slidesToShow: 2 } },
+      { breakpoint: 768, settings: { slidesToShow: 1.3 } },
+      { breakpoint: 640, settings: { slidesToShow: 1 } },
+    ],
+  };
 
   return (
     <div className="p-8 min-h-screen bg-gray-50">
@@ -308,7 +317,7 @@ function Projects() {
           const showExpandedFeedback = expandedFeedback[proj.projectId];
 
           return (
-            <div key={proj.projectId} className="bg-white p-6 rounded-2xl shadow mx-2">
+            <div key={proj.projectId} className="bg-white p-6 rounded-2xl shadow mx-2 min-w-[280px]">
               <h3 className="text-2xl font-bold mb-2 text-[#4B3A2F]">{proj.projectName}</h3>
               <p className="text-gray-700 mb-4">{proj.description}</p>
 
@@ -328,121 +337,16 @@ function Projects() {
                     {proj.projectStatus}
                   </p>
                 </div>
-                {auth.role === "ADMIN" && (
-                  <>
-                    <div>
-                      <p className="text-sm text-gray-500">Spent</p>
-                      <p className="text-lg font-semibold">₱{activities.filter(a => a.type === "Expense").reduce((sum, a) => sum + Number(a.expenses || 0), 0).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Citizen Rating</p>
-                      <p className="text-lg font-semibold">{avgRating} ⭐</p>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Admin Activities Section */}
-              {auth.role === "ADMIN" && (
-                <div className="mb-6 border-t pt-6">
-                  <h4 className="text-lg font-semibold mb-4">Activities</h4>
-                  <div className="max-h-48 overflow-y-auto mb-4 bg-gray-50 rounded p-4">
-                    {activities.length === 0 ? (
-                      <p className="text-gray-500 text-sm">No activities yet</p>
-                    ) : (
-                      activities.map(a => (
-                        <div key={a.activityId} className="border-b border-gray-200 py-3 last:border-b-0">
-                          <p className="font-semibold text-[#4B3A2F]">{a.activityName}</p>
-                          <p className="text-sm text-gray-600">{a.description}</p>
-                          <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>{a.type}</span>
-                            {a.type === "Expense" && <span>₱{Number(a.expenses).toLocaleString()}</span>}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Add Activity Form */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <input
-                      type="text"
-                      placeholder="Activity Name"
-                      value={newActivityMap[proj.projectId]?.activityName || ""}
-                      onChange={e => setNewActivityMap(prev => ({
-                        ...prev,
-                        [proj.projectId]: { ...prev[proj.projectId], activityName: e.target.value, type: prev[proj.projectId]?.type || "Report" }
-                      }))}
-                      className="p-2 border rounded w-full mb-2 text-sm"
-                    />
-                    <textarea
-                      placeholder="Description"
-                      value={newActivityMap[proj.projectId]?.description || ""}
-                      onChange={e => setNewActivityMap(prev => ({
-                        ...prev,
-                        [proj.projectId]: { ...prev[proj.projectId], description: e.target.value }
-                      }))}
-                      className="p-2 border rounded w-full mb-2 text-sm resize-none"
-                      rows="2"
-                    />
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <input
-                        type="date"
-                        value={newActivityMap[proj.projectId]?.date || new Date().toISOString().split('T')[0]}
-                        onChange={e => setNewActivityMap(prev => ({
-                          ...prev,
-                          [proj.projectId]: { ...prev[proj.projectId], date: e.target.value }
-                        }))}
-                        className="p-2 border rounded text-sm"
-                      />
-                      <select
-                        value={newActivityMap[proj.projectId]?.type || "Report"}
-                        onChange={e => setNewActivityMap(prev => ({
-                          ...prev,
-                          [proj.projectId]: { ...prev[proj.projectId], type: e.target.value }
-                        }))}
-                        className="p-2 border rounded text-sm"
-                      >
-                        <option value="Report">Report</option>
-                        <option value="Expense">Expense</option>
-                      </select>
-                    </div>
-                    {newActivityMap[proj.projectId]?.type === "Expense" && (
-                      <input
-                        type="number"
-                        placeholder="Amount"
-                        value={newActivityMap[proj.projectId]?.expenses || 0}
-                        onChange={e => setNewActivityMap(prev => ({
-                          ...prev,
-                          [proj.projectId]: { ...prev[proj.projectId], expenses: Number(e.target.value) }
-                        }))}
-                        className="p-2 border rounded mb-2 w-full text-sm"
-                      />
-                    )}
-                    <button
-                      onClick={() => handleAddActivity(proj.projectId)}
-                      className="px-4 py-2 bg-[#4B3A2F] text-white rounded text-sm font-semibold hover:bg-[#3a2d23]"
-                    >
-                      Add Activity
-                    </button>
-                  </div>
+                <div>
+                  <p className="text-sm text-gray-500">Citizen Rating</p>
+                  <p className="text-lg font-semibold">{avgRating} ⭐</p>
                 </div>
-              )}
+              </div>
 
               {/* Citizen Feedback Section */}
               {auth.role === "CITIZEN" && (
                 <div className="border-t pt-6">
                   <h4 className="text-lg font-semibold mb-4">Community Feedback</h4>
-
-                  {/* Feedback Stats */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg mb-4">
-                    <p className="text-sm text-gray-600 mb-1">Overall Rating</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-3xl font-bold text-[#4B3A2F]">{avgRating}</span>
-                      <div className="text-xl">⭐</div>
-                      <span className="text-sm text-gray-500">({feedbacks.length} reviews)</span>
-                    </div>
-                  </div>
 
                   {/* Add Feedback Form */}
                   <div className="bg-[#FFF5F0] p-4 rounded-lg mb-6 border border-[#FFE0D6]">

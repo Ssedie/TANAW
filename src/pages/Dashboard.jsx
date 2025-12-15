@@ -9,40 +9,79 @@ function Dashboard() {
   const { auth } = useAuth();
   const [projects, setProjects] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [totalBudget, setTotalBudget] = useState(0);
+  const [currentFiscalYear, setCurrentFiscalYear] = useState("");
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState("");
+  const [availableFiscalYears, setAvailableFiscalYears] = useState([]);
+  const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // --- Fetch projects and activities ---
+  // --- Fetch data ---
   useEffect(() => {
     if (!auth?.token) return;
     const headers = { Authorization: `Bearer ${auth.token}` };
     setLoading(true);
 
+    // Get current fiscal year
+    axios.get(`${API_URL}/api/dashboard/fiscal-year/current`, { headers })
+      .then(res => {
+        const year = res.data.currentFiscalYear;
+        setCurrentFiscalYear(year);
+        setSelectedFiscalYear(year);
+      })
+      .catch(console.error);
+
+    // Get available fiscal years
+    axios.get(`${API_URL}/api/dashboard/fiscal-years/available`, { headers })
+      .then(res => setAvailableFiscalYears(res.data))
+      .catch(console.error);
+
+    // Get projects
     axios.get(`${API_URL}/api/projects`, { headers })
-      .then(res => setProjects(res.data))
-      .catch(console.error);
+      .then(async res => {
+        setProjects(res.data);
 
-    axios.get(`${API_URL}/api/dashboard/total-budget`, { headers }
-      ).then(res => setTotalBudget(res.data.totalBudget))
-      .catch(console.error);
+        // Fetch activities per project
+        const allActivities = [];
+        for (const proj of res.data) {
+          try {
+            const actRes = await axios.get(`${API_URL}/api/activities/project/${proj.projectId}`, { headers });
+            allActivities.push(...actRes.data);
+          } catch (err) {
+            console.error(err);
+          }
+        }
 
-    axios.get(`${API_URL}/api/activities/recent`, { headers })
-      .then(res => setActivities(res.data))
+        allActivities.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setActivities(allActivities);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [auth]);
 
-  // --- Budget Calculations ---
+  // --- Fetch overview when fiscal year changes ---
+  useEffect(() => {
+    if (!auth?.token || !selectedFiscalYear) return;
+    const headers = { Authorization: `Bearer ${auth.token}` };
+
+    axios.get(`${API_URL}/api/dashboard/overview`, {
+      params: { fiscalYear: selectedFiscalYear },
+      headers
+    })
+      .then(res => setOverview(res.data))
+      .catch(console.error);
+  }, [selectedFiscalYear, auth]);
+
   const totalSpent = projects.reduce((sum, p) => {
     const spent = (p.activities || []).reduce((aSum, a) => aSum + Number(a.expenses || 0), 0);
     return sum + spent;
   }, 0);
+
+  const totalBudget = overview?.totalBudget || 0;
   const totalAvailable = totalBudget - totalSpent;
 
-  // --- Active Projects ---
   const activeProjects = projects.filter(p => p.projectStatus === "ONGOING");
 
-  // --- Budget Distribution (by type) ---
+  // Budget distribution
   const budgetDistribution = [];
   const typeMap = {};
   projects.forEach(p => {
@@ -58,12 +97,34 @@ function Dashboard() {
 
   return (
     <div className="p-8 min-h-screen bg-gray-50">
-      <h1 className="text-4xl font-bold mb-6 text-[#4B3A2F]">Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-4xl font-bold text-[#4B3A2F]">Dashboard</h1>
+        <div className="flex gap-4 items-center">
+          {currentFiscalYear && (
+            <div className="px-4 py-2 bg-blue-100 rounded-lg border border-blue-300">
+              <p className="text-sm font-semibold text-blue-900">Current FY: {currentFiscalYear}</p>
+            </div>
+          )}
+          {availableFiscalYears.length > 1 && (
+            <select
+              value={selectedFiscalYear}
+              onChange={(e) => setSelectedFiscalYear(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6404]"
+            >
+              {availableFiscalYears.map(year => (
+                <option key={year} value={year}>
+                  Fiscal Year {year}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
 
-      {/* --- Budget Overview --- */}
+      {/* Budget Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-xl font-semibold mb-2">Total Budget</h2>
+          <h2 className="text-xl font-semibold mb-2">Total Budget (FY {selectedFiscalYear})</h2>
           <p className="text-2xl font-bold">₱{Number(totalBudget).toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow">
@@ -76,7 +137,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* --- Project Status Table --- */}
+      {/* Project Status Table */}
       <div className="bg-white p-6 rounded-2xl shadow mb-6 overflow-x-auto">
         <h2 className="text-2xl font-semibold mb-4">Project Status</h2>
         <table className="min-w-full text-left">
@@ -107,42 +168,49 @@ function Dashboard() {
         </table>
       </div>
 
-      {/* --- Budget Distribution --- */}
+      {/* Budget Distribution */}
       <div className="bg-white p-6 rounded-2xl shadow mb-6">
-        <h2 className="text-2xl font-semibold mb-4">Budget Distribution</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={budgetDistribution} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-            <XAxis dataKey="type" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="amount">
-              {budgetDistribution.map((entry, index) => (
-                <Cell key={index} fill={colors[index % colors.length]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <h2 className="text-2xl font-semibold mb-4">Budget Distribution by Type</h2>
+        {budgetDistribution.length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={budgetDistribution} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+              <XAxis dataKey="type" />
+              <YAxis />
+              <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
+              <Bar dataKey="amount">
+                {budgetDistribution.map((entry, index) => (
+                  <Cell key={index} fill={colors[index % colors.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="text-gray-500">No project data available</p>
+        )}
       </div>
 
-      {/* --- Recent Activities --- */}
+      {/* Recent Activities */}
       <div className="bg-white p-6 rounded-2xl shadow mb-6">
         <h2 className="text-2xl font-semibold mb-4">Recent Activities</h2>
         {activities.length === 0 ? (
           <p>No recent activities.</p>
         ) : (
           <ul className="space-y-2">
-            {activities.map(a => (
+            {activities.slice(0, 10).map(a => (
               <li key={a.activityId} className="border-b p-2">
                 <p className="font-semibold">{a.activityName}</p>
                 <p className="text-sm">{a.description}</p>
-                <p className="text-xs text-gray-500">{new Date(a.date).toLocaleDateString()} - ₱{a.expenses}</p>
+                <p className="text-xs text-gray-500">
+                  {new Date(a.date).toLocaleDateString()} 
+                  {a.type === "Expense" && ` - ₱${Number(a.expenses || 0).toLocaleString()}`}
+                </p>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      {/* --- Active Projects --- */}
+      {/* Active Projects */}
       <div className="bg-white p-6 rounded-2xl shadow">
         <h2 className="text-2xl font-semibold mb-4">Active Projects</h2>
         <p className="text-xl font-bold">{activeProjects.length}</p>

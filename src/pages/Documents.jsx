@@ -8,12 +8,18 @@ function Documents() {
   const { auth } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [title, setTitle] = useState("");
-  const [type, setType] = useState("General"); // default type
+  const [type, setType] = useState("General");
   const [file, setFile] = useState(null);
-  const [totalBudget, setTotalBudget] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fetch documents from backend
+  // Budget creation state
+  const [selectedDocId, setSelectedDocId] = useState(null);
+  const [budgetFiscalYear, setBudgetFiscalYear] = useState(new Date().getFullYear().toString());
+  const [budgetAmount, setBudgetAmount] = useState("");
+  const [budgetDescription, setBudgetDescription] = useState("");
+  const [budgetSubmitting, setBudgetSubmitting] = useState(false);
+  const [budgetsByDoc, setBudgetsByDoc] = useState({});
+
   const fetchDocuments = async () => {
     if (!auth?.token) return;
     try {
@@ -21,6 +27,19 @@ function Documents() {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
       setDocuments(res.data);
+      
+      // Fetch budgets for each document
+      res.data.forEach(doc => {
+        if (doc.documentType === "Project Plan") {
+          axios.get(`${API_URL}/api/documents/${doc.documentId}/budgets`, {
+            headers: { Authorization: `Bearer ${auth.token}` },
+          })
+          .then(budgetRes => {
+            setBudgetsByDoc(prev => ({ ...prev, [doc.documentId]: budgetRes.data }));
+          })
+          .catch(console.error);
+        }
+      });
     } catch (err) {
       console.error(err);
     }
@@ -30,7 +49,7 @@ function Documents() {
     fetchDocuments();
   }, [auth]);
 
-  // Handle document upload (Admin only)
+  // Handle document upload
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file || !title || !type) {
@@ -43,10 +62,6 @@ function Documents() {
     formData.append("type", type);
     formData.append("file", file);
 
-    if (type === "Project Plan" && totalBudget) {
-      formData.append("totalBudget", totalBudget);
-    }
-
     try {
       setLoading(true);
       await axios.post(`${API_URL}/api/documents/upload`, formData, {
@@ -57,17 +72,54 @@ function Documents() {
       });
 
       alert("Document uploaded successfully!");
-      // Reset form fields
       setTitle("");
       setType("General");
       setFile(null);
-      setTotalBudget("");
-      fetchDocuments(); // Refresh the document list
+      fetchDocuments();
     } catch (err) {
       console.error(err);
       alert("Upload failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle budget creation
+  const handleCreateBudget = async (e) => {
+    e.preventDefault();
+    if (!selectedDocId || !budgetFiscalYear || !budgetAmount) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    try {
+      setBudgetSubmitting(true);
+      const response = await axios.post(
+        `${API_URL}/api/documents/budget`,
+        {
+          documentId: selectedDocId,
+          fiscalYear: budgetFiscalYear,
+          totalBudget: budgetAmount,
+          description: budgetDescription,
+        },
+        {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        }
+      );
+
+      alert("Budget created successfully!");
+      setBudgetAmount("");
+      setBudgetDescription("");
+      setBudgetFiscalYear(new Date().getFullYear().toString());
+      setSelectedDocId(null);
+
+      // Refresh budgets
+      fetchDocuments();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create budget");
+    } finally {
+      setBudgetSubmitting(false);
     }
   };
 
@@ -77,90 +129,164 @@ function Documents() {
 
       {/* Admin-only Upload Form */}
       {auth?.role === "ADMIN" && (
-        <div className="bg-white shadow rounded p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Upload Document</h2>
-          <form onSubmit={handleUpload} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Title</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded p-2"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Type</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded p-2"
-              >
-                <option value="General">General</option>
-                <option value="Project Plan">Project Plan</option>
-              </select>
-            </div>
-
-            {type === "Project Plan" && (
+        <>
+          <div className="bg-white shadow rounded p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Upload Document</h2>
+            <form onSubmit={handleUpload} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Total Budget</label>
+                <label className="block text-sm font-medium text-gray-700">Title</label>
                 <input
-                  type="number"
-                  value={totalBudget}
-                  onChange={(e) => setTotalBudget(e.target.value)}
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                   className="mt-1 block w-full border border-gray-300 rounded p-2"
                   required
                 />
               </div>
-            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">File</label>
-              <input
-                type="file"
-                onChange={(e) => setFile(e.target.files[0])}
-                className="mt-1 block w-full"
-                required
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Type</label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded p-2"
+                >
+                  <option value="General">General</option>
+                  <option value="Project Plan">Project Plan</option>
+                </select>
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-[#4B3A2F] text-white rounded hover:bg-[#3a2c24]"
-            >
-              {loading ? "Uploading..." : "Upload Document"}
-            </button>
-          </form>
-        </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">File</label>
+                <input
+                  type="file"
+                  onChange={(e) => setFile(e.target.files[0])}
+                  className="mt-1 block w-full"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-[#4B3A2F] text-white rounded hover:bg-[#3a2c24]"
+              >
+                {loading ? "Uploading..." : "Upload Document"}
+              </button>
+            </form>
+          </div>
+
+          {/* Budget Creation Form */}
+          <div className="bg-white shadow rounded p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Create Budget for Project Plan</h2>
+            <form onSubmit={handleCreateBudget} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Select Project Plan</label>
+                <select
+                  value={selectedDocId || ""}
+                  onChange={(e) => setSelectedDocId(e.target.value ? parseInt(e.target.value) : null)}
+                  className="mt-1 block w-full border border-gray-300 rounded p-2"
+                  required
+                >
+                  <option value="">Choose a project plan...</option>
+                  {documents
+                    .filter(doc => doc.documentType === "Project Plan")
+                    .map(doc => (
+                      <option key={doc.documentId} value={doc.documentId}>
+                        {doc.documentTitle}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Fiscal Year</label>
+                <input
+                  type="text"
+                  value={budgetFiscalYear}
+                  onChange={(e) => setBudgetFiscalYear(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded p-2"
+                  placeholder="e.g., 2025"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Total Budget Amount</label>
+                <input
+                  type="number"
+                  value={budgetAmount}
+                  onChange={(e) => setBudgetAmount(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded p-2"
+                  placeholder="e.g., 5000000"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description (Optional)</label>
+                <textarea
+                  value={budgetDescription}
+                  onChange={(e) => setBudgetDescription(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded p-2"
+                  rows="3"
+                  placeholder="Enter budget description..."
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={budgetSubmitting}
+                className="px-4 py-2 bg-[#FF6404] text-white rounded hover:bg-[#e55a00]"
+              >
+                {budgetSubmitting ? "Creating..." : "Create Budget"}
+              </button>
+            </form>
+          </div>
+        </>
       )}
 
-      {/* Document List (Visible to all roles) */}
+      {/* Document List */}
       <div className="bg-white shadow rounded p-6">
         <h2 className="text-xl font-semibold mb-4">Uploaded Documents</h2>
         {documents.length === 0 ? (
           <p>No documents uploaded yet.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-4">
             {documents.map((doc) => (
-              <li
-                key={doc.documentId}
-                className="p-2 border rounded flex justify-between items-center hover:bg-gray-50"
-              >
-                <div>
-                  <div className="font-medium">{doc.documentTitle}</div>
-                  <div className="text-xs text-gray-500">{doc.documentType}</div>
-                  <div className="text-xs text-gray-400">{new Date(doc.uploadDate).toLocaleDateString()}</div>
+              <div key={doc.documentId} className="p-4 border rounded hover:bg-gray-50">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="font-medium text-lg">{doc.documentTitle}</div>
+                    <div className="text-sm text-gray-500">{doc.documentType}</div>
+                  </div>
+                  <a
+                    href={`${API_URL}/api/documents/${doc.documentId}/download`}
+                    className="px-3 py-1 bg-[#4B3A2F] text-white rounded text-sm hover:bg-[#3a2c24]"
+                  >
+                    Download
+                  </a>
                 </div>
-                <a
-                  href={`${API_URL}/api/documents/${doc.documentId}/download`}
-                  className="px-2 py-1 bg-[#4B3A2F] text-white rounded text-sm hover:bg-[#3a2c24]"
-                >
-                  Download
-                </a>
-              </li>
+
+                {/* Show budgets for this document if it's a Project Plan */}
+                {doc.documentType === "Project Plan" && budgetsByDoc[doc.documentId] && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+                    <p className="font-semibold text-sm mb-2">Budgets:</p>
+                    {budgetsByDoc[doc.documentId].length === 0 ? (
+                      <p className="text-sm text-gray-600">No budgets created yet</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {budgetsByDoc[doc.documentId].map((budget, idx) => (
+                          <li key={idx} className="text-sm text-gray-700">
+                            <span className="font-medium">FY {budget.fiscalYear}:</span> ₱{(budget.totalBudget || 0).toLocaleString()}
+                            {budget.description && <p className="text-xs text-gray-600">{budget.description}</p>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </ul>
         )}

@@ -4,14 +4,8 @@ import com.crud.tanaw.dto.ActivityDTO;
 import com.crud.tanaw.dto.ProjectDTO;
 import com.crud.tanaw.dto.ReqRep.FeedbackRequest;
 import com.crud.tanaw.dto.ReqRep.FeedbackResponseDTO;
-import com.crud.tanaw.entities.Document;
-import com.crud.tanaw.entities.Feedback;
-import com.crud.tanaw.entities.Project;
-import com.crud.tanaw.entities.User;
-import com.crud.tanaw.repositories.DocumentRepository;
-import com.crud.tanaw.repositories.FeedbackRepository;
-import com.crud.tanaw.repositories.ProjectRepository;
-import com.crud.tanaw.repositories.UserRepository;
+import com.crud.tanaw.entities.*;
+import com.crud.tanaw.repositories.*;
 import com.crud.tanaw.services.DocumentService;
 import com.crud.tanaw.utility.SecurityUtil;
 import jakarta.validation.constraints.NotNull;
@@ -26,9 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.constraints.NotBlank;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -45,10 +37,100 @@ public class ApiProjectController {
     private FeedbackRepository feedbackRepository;
 
     @Autowired
+    private BudgetRepository budgetRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private DocumentRepository documentRepository;
+
+    // --- NEW ENDPOINT: Get available budget for a document/plan ---
+    @GetMapping("/budget/{budgetId}")
+    public ResponseEntity<Map<String, Object>> getAvailableBudget(
+            @PathVariable Integer budgetId
+    ) {
+        try {
+            System.out.println("=== Available Budget Endpoint ===");
+            System.out.println("Budget ID: " + budgetId);
+
+            // Fetch the budget
+            Budget budget = budgetRepository.findById(budgetId)
+                    .orElseThrow(() -> new RuntimeException("Budget not found"));
+
+            System.out.println("Fiscal Year: " + budget.getFiscalYear());
+            System.out.println("Total Budget: " + budget.getTotalBudget());
+
+            // Check if total budget is set
+            if (budget.getTotalBudget() == null || budget.getTotalBudget() == 0) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "This budget does not have a total amount set"));
+            }
+
+            // Calculate used budget from all projects linked to this budget
+            Double usedBudgetQuery = projectRepository.sumAllocatedBudgetByBudgetId(budgetId);
+            double usedBudget = (usedBudgetQuery != null) ? usedBudgetQuery : 0;
+
+            System.out.println("Used Budget: " + usedBudget);
+
+            double availableBudget = budget.getTotalBudget() - usedBudget;
+            System.out.println("Available Budget: " + availableBudget);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("budgetId", budgetId);
+            response.put("fiscalYear", budget.getFiscalYear());
+            response.put("totalBudget", budget.getTotalBudget());
+            response.put("usedBudget", usedBudget);
+            response.put("availableBudget", Math.max(availableBudget, 0));
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            System.err.println("RuntimeException: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Exception: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Server error: " + e.getMessage()));
+        }
+    }
+
+    // --- Get current fiscal year and available years ---
+    @GetMapping("/fiscal-year/current")
+    public ResponseEntity<Map<String, Object>> getCurrentFiscalYear() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("currentFiscalYear", java.time.Year.now().toString());
+        return ResponseEntity.ok(response);
+    }
+
+    // --- Get budgets for a document ---
+    @GetMapping("/budgets/document/{documentId}")
+    public ResponseEntity<List<Map<String, Object>>> getBudgetsByDocument(
+            @PathVariable Integer documentId
+    ) {
+        List<Budget> budgets = budgetRepository.findByDocumentId(documentId);
+        List<Map<String, Object>> response = new ArrayList<>();
+
+        for (Budget budget : budgets) {
+            Double usedBudget = projectRepository.sumAllocatedBudgetByBudgetId(budget.getBudgetId());
+            usedBudget = (usedBudget != null) ? usedBudget : 0;
+            double available = (budget.getTotalBudget() != null) ? budget.getTotalBudget() - usedBudget : 0;
+
+            Map<String, Object> budgetInfo = new HashMap<>();
+            budgetInfo.put("budgetId", budget.getBudgetId());
+            budgetInfo.put("fiscalYear", budget.getFiscalYear());
+            budgetInfo.put("totalBudget", budget.getTotalBudget());
+            budgetInfo.put("usedBudget", usedBudget);
+            budgetInfo.put("availableBudget", Math.max(available, 0));
+
+            response.add(budgetInfo);
+        }
+
+        return ResponseEntity.ok(response);
+    }
 
     // --- List all projects ---
     @GetMapping
@@ -70,7 +152,7 @@ public class ApiProjectController {
             @RequestParam @NotBlank String projectStatus,
             @RequestParam(required = false) MultipartFile document,
             @RequestParam Long userId,
-            @RequestParam Long planDocumentId,
+            @RequestParam Long budgetId,
             Authentication auth
     ) {
         try {
@@ -82,44 +164,63 @@ public class ApiProjectController {
             User user = userRepository.findById(userId.intValue())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            Document planDoc = documentRepository.findById(planDocumentId.intValue())
-                    .orElseThrow(() -> new RuntimeException("Project Plan not found"));
+            Budget budget = budgetRepository.findById(budgetId.intValue())
+                    .orElseThrow(() -> new RuntimeException("Budget not found"));
+
+            Document planDoc = budget.getDocument();
+            if (planDoc == null) {
+                return ResponseEntity.badRequest()
+                        .body("Budget is not linked to a document");
+            }
 
             // Validate allocated budget
-            double usedBudget = projectRepository.findByDocument(planDoc)
-                    .stream()
-                    .mapToDouble(Project::getAllocatedBudget)
-                    .sum();
+            Double usedBudget = projectRepository.sumAllocatedBudgetByBudgetId(budgetId.intValue());
+            usedBudget = (usedBudget != null) ? usedBudget : 0;
 
-            double remainingBudget = planDoc.getTotalBudget() - usedBudget;
+            double remainingBudget = budget.getTotalBudget() - usedBudget;
             if (allocatedBudget > remainingBudget) {
                 return ResponseEntity.badRequest()
-                        .body("Allocated budget exceeds remaining plan budget");
+                        .body("Allocated budget exceeds remaining budget for FY " + budget.getFiscalYear());
             }
 
             Project project = new Project();
             project.setProjectName(projectName);
             project.setDescription(description);
             project.setProjectType(projectType);
-            project.setAllocatedBudget((allocatedBudget));
+            project.setAllocatedBudget(allocatedBudget);
             project.setProjectStatus(projectStatus);
             project.setUser(user);
             project.setDocument(planDoc);
+            project.setBudget(budget);
 
+            // If user uploads a document, save it separately
             if (document != null && !document.isEmpty()) {
-                Document doc = new Document();
-                doc.setDocumentTitle(document.getOriginalFilename());
-                doc.setDocumentType(document.getContentType());
-                doc.setContent("/uploads/" + UUID.randomUUID() + "_" + document.getOriginalFilename());
-                doc.setUploader(user);
-                Document savedDoc = documentRepository.save(doc);
-                project.setDocument(savedDoc);
+                try {
+                    Document uploadedDoc = new Document();
+                    uploadedDoc.setDocumentTitle(document.getOriginalFilename());
+                    uploadedDoc.setDocumentType(document.getContentType());
+                    uploadedDoc.setContent("/uploads/" + UUID.randomUUID() + "_" + document.getOriginalFilename());
+                    uploadedDoc.setUploader(user);
+                    documentRepository.save(uploadedDoc);
+                    System.out.println("Project document uploaded: " + uploadedDoc.getDocumentId());
+                } catch (Exception e) {
+                    System.err.println("Warning: Could not save uploaded document: " + e.getMessage());
+                }
             }
 
             Project savedProject = projectRepository.save(project);
+
+            System.out.println("Project created successfully");
+            System.out.println("Project ID: " + savedProject.getProjectId());
+            System.out.println("Budget ID: " + savedProject.getBudget().getBudgetId());
+            System.out.println("Fiscal Year: " + savedProject.getFiscalYear());
+            System.out.println("Allocated Budget: " + savedProject.getAllocatedBudget());
+
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(savedProject));
 
         } catch (Exception e) {
+            System.err.println("Error creating project: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Error creating project: " + e.getMessage());
         }

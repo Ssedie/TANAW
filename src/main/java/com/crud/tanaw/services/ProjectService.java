@@ -35,7 +35,7 @@ public class ProjectService {
     public Project createProject(String projectName, String description,
                                  String startDateStr, String endDateStr,
                                  Double allocatedBudget, String projectStatus,
-                                 User user, MultipartFile file) {
+                                 User user, MultipartFile file, Integer existingDocumentId) {
 
         Project project = new Project();
         project.setProjectName(projectName);
@@ -52,7 +52,14 @@ public class ProjectService {
             e.printStackTrace();
         }
 
-        if (file != null && !file.isEmpty()) {
+        // Use existing document if provided
+        if (existingDocumentId != null) {
+            Document document = documentRepository.findById(existingDocumentId)
+                    .orElseThrow(() -> new RuntimeException("Document not found"));
+            project.setDocument(document);
+        }
+        // Otherwise, create a new document if file exists
+        else if (file != null && !file.isEmpty()) {
             try {
                 Document document = new Document();
                 document.setDocumentTitle(file.getOriginalFilename());
@@ -60,10 +67,7 @@ public class ProjectService {
                 document.setContent("/uploads/" + UUID.randomUUID() + "_" + file.getOriginalFilename());
                 document.setUploader(user);
 
-                // Save document first
                 documentRepository.save(document);
-
-                // Associate document with project
                 project.setDocument(document);
             } catch (Exception e) {
                 e.printStackTrace();

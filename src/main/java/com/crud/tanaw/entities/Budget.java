@@ -1,8 +1,12 @@
 package com.crud.tanaw.entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "budgets")
@@ -19,6 +23,10 @@ public class Budget {
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date uploadDate;
+
+    @OneToMany(mappedBy = "budget")  // NEW: Link back to projects
+    @JsonManagedReference
+    private List<Project> projects = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_id")
@@ -54,4 +62,11 @@ public class Budget {
 
     public User getUploader() { return uploader; }
     public void setUploader(User uploader) { this.uploader = uploader; }
+
+    public List<Project> getProjects() {
+        return projects;
+    }
+    public void setProjects(List<Project> projects) {
+        this.projects = projects;
+    }
 }

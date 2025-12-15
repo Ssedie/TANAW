@@ -41,9 +41,16 @@ public class Project {
     @JsonBackReference
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "budget_id")  // NEW: Link to specific Budget
+    @JsonBackReference
+    private Budget budget;
+
     @OneToMany(mappedBy = "project")
     @JsonManagedReference
     private List<Feedback> feedbacks = new ArrayList<>();
+
+
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<Activity> activities;
@@ -96,5 +103,16 @@ public class Project {
 
     public void setProjectType(String projectType) {
         this.projectType = projectType;
+    }
+
+    public Budget getBudget() {
+        return budget;
+    }
+
+    public void setBudget(Budget budget) {
+        this.budget = budget;
+    }
+    public String getFiscalYear() {
+        return (this.budget != null) ? this.budget.getFiscalYear() : null;
     }
 }

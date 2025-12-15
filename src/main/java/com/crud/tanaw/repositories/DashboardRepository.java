@@ -28,6 +28,17 @@ public interface DashboardRepository extends JpaRepository<Project, Integer> {
     @Query("SELECT COALESCE(SUM(b.totalExpenses), 0) FROM Budget b")
     Double sumTotalExpenses();
 
+    @Query("SELECT COALESCE(SUM(b.totalBudget), 0) FROM Budget b WHERE b.fiscalYear = ?1")
+    Double sumApprovedBudgetByFiscalYear(String fiscalYear);
+
+    @Query("SELECT COALESCE(SUM(b.totalExpenses), 0) FROM Budget b WHERE b.fiscalYear = ?1")
+    Double sumTotalExpensesByFiscalYear(String fiscalYear);
+
+    @Query("SELECT d.documentType as documentType, SUM(b.totalBudget) as totalBudget FROM Budget b JOIN b.document d WHERE b.fiscalYear = ?1 GROUP BY d.documentType")
+    List<Object[]> findBudgetDistributionByDocumentTypeAndFiscalYear(String fiscalYear);
+
+    @Query("SELECT DISTINCT b.fiscalYear FROM Budget b ORDER BY b.fiscalYear DESC")
+    List<String> findDistinctFiscalYears();
 
     // --- Budget distribution by document type / sector ---
     @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.BudgetDistributionDTO(" +

@@ -10,6 +10,7 @@ public class ProjectStatusDTO {
     private Double spentBudget;
     private Double progress; // 0-100
     private String status;
+    private Double remainingBudget;
     private Date dueDate;
 
     public ProjectStatusDTO() {}
@@ -17,12 +18,13 @@ public class ProjectStatusDTO {
     // This constructor exactly matches the JPQL query
     public ProjectStatusDTO(Integer projectId, String projectName,
                             Double allocatedBudget, Double spentBudget,
-                            String status, Date dueDate) {
+                            String status, Double remainingBudget,Date dueDate) {
         this.projectId = projectId;
         this.projectName = projectName;
         this.allocatedBudget = allocatedBudget;
         this.spentBudget = spentBudget;
         this.status = status;
+        this.remainingBudget = remainingBudget;
         this.dueDate = dueDate;
         this.progress = 0.0; // calculate in controller
     }
@@ -42,4 +44,12 @@ public class ProjectStatusDTO {
     public void setStatus(String status) { this.status = status; }
     public Date getDueDate() { return dueDate; }
     public void setDueDate(Date dueDate) { this.dueDate = dueDate; }
+
+    public Double getRemainingBudget() {
+        return remainingBudget;
+    }
+
+    public void setRemainingBudget(Double remainingBudget) {
+        this.remainingBudget = remainingBudget;
+    }
 }

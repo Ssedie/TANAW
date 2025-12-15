@@ -32,5 +32,13 @@ public interface BudgetRepository extends JpaRepository<Budget, Integer> {
        """)
     List<BudgetDistributionDTO> findBudgetDistributionByDocumentType();
 
+    @Query("SELECT b FROM Budget b WHERE b.document.documentId = ?1 ORDER BY b.fiscalYear DESC")
+    List<Budget> findByDocumentId(Integer documentId);
+
+    @Query("SELECT b FROM Budget b WHERE b.document.documentId = ?1 AND b.fiscalYear = ?2")
+    Budget findByDocumentIdAndFiscalYear(Integer documentId, String fiscalYear);
+
+    @Query("SELECT DISTINCT b.fiscalYear FROM Budget b ORDER BY b.fiscalYear DESC")
+    List<String> findDistinctFiscalYears();
 
 }

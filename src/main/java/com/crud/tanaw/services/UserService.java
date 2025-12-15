@@ -252,4 +252,22 @@ public class UserService {
         return true;
     }
 
+    @Transactional
+    public void removeProfilePicture(Long userId) {
+        User user = findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String picturePath = user.getPicturePath();
+        if (picturePath != null && !picturePath.isEmpty()) {
+            try {
+                Path path = Paths.get(picturePath).toAbsolutePath().normalize();
+                Files.deleteIfExists(path);
+            } catch (IOException e) {
+                throw new RuntimeException("Could not delete profile picture: " + e.getMessage());
+            }
+            user.setPicturePath(null); // reset to default
+            userRepository.save(user);
+        }
+    }
+
 }

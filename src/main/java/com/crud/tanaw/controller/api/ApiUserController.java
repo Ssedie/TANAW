@@ -9,6 +9,7 @@ import com.crud.tanaw.entities.User;
 import com.crud.tanaw.services.PasswordRateLimiter;
 import com.crud.tanaw.services.UserService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
@@ -30,10 +31,32 @@ public class ApiUserController {
         this.limiter = limiter;
     }
 
+    @Value("${app.super-admin-id}")
+    private Integer superAdminId;
+
+    @Value("${app.super-admin-password}")
+    private String superAdminPassword;
+
 
     @GetMapping("/profile")
     public UserDTO getProfile(Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
+
+        if (userId.equals(superAdminId.longValue())) {
+            return new UserDTO(
+                    superAdminId,
+                    "Super",               // fName
+                    null,                  // mName
+                    "Admin",               // lName
+                    "superadmin@tanaw.com", // email
+                    "ADMIN",               // role
+                    null,                  // phoneNumber
+                    null, null, null, null, null, null, null, null, // address
+                    null, // picturePath
+                    "ACTIVE"               // accountStatus
+            );
+        }
+
         User user = userService.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return mapToDTO(user);
@@ -45,11 +68,16 @@ public class ApiUserController {
             BindingResult bindingResult,
             Authentication authentication) {
 
+        Long userId = Long.valueOf(authentication.getName());
+
+        if (userId.equals(superAdminId.longValue())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot edit Superadmin profile");
+        }
+
         if (bindingResult.hasErrors()) {
             throw new RuntimeException("Validation failed: " + bindingResult.getAllErrors());
         }
 
-        Long userId = Long.valueOf(authentication.getName());
         User updatedUser = userService.updateUserProfile(userId, request);
         return mapToDTO(updatedUser);
     }
@@ -82,6 +110,11 @@ public class ApiUserController {
             Authentication authentication
     ) {
         Long userId = Long.valueOf(authentication.getName());
+
+        if (userId.equals(superAdminId.longValue())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot change Superadmin password");
+        }
+
         String currentPassword = request.get("currentPassword");
         String newPassword = request.get("newPassword");
 
@@ -89,12 +122,25 @@ public class ApiUserController {
 
         return Map.of("message", "Password updated successfully");
     }
+
+    @DeleteMapping("/profile-picture")
+    public Map<String, String> deleteProfilePicture(Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        userService.removeProfilePicture(userId);
+        return Map.of("message", "Profile picture removed successfully");
+    }
+
     @PostMapping("/check-password")
     public Map<String, Object> checkPassword(
             @RequestBody Map<String, String> request,
             Authentication authentication
     ) {
         Long userId = Long.valueOf(authentication.getName());
+
+        if (userId.equals(superAdminId.longValue())) {
+            boolean valid = superAdminPassword.equals(request.get("currentPassword"));
+            return Map.of("valid", valid, "locked", false);
+        }
 
         if (limiter.isLocked(userId)) {
             return Map.of("valid", false, "locked", true, "message", "Too many attempts. Try again later.");

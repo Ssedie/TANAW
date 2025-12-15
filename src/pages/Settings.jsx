@@ -1,11 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthProvider";
 import { API_URL } from "../config/constants";
-import { CheckCircle, AlertCircle, Loader } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader, Camera, Trash2 } from "lucide-react";
+
+const getDefaultAvatar = (fName, lName) => {
+  return `${(fName?.[0] || "T").toUpperCase()}${(lName?.[0] || "W").toUpperCase()}`;
+};
 
 const Settings = () => {
   const { auth, setAuth } = useAuth() || {};
   const token = auth?.token || "";
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -45,8 +50,15 @@ const Settings = () => {
   const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
+    if (auth?.userId) {
+      if (auth.userId === 100001) {
+        setIsSuperAdmin(true);
+      } else {
+        setIsSuperAdmin(false);
+      }
+    }
     fetchUserProfile();
-  }, []);
+  }, [auth?.userId]);
 
   async function fetchUserProfile() {
     try {
@@ -68,8 +80,8 @@ const Settings = () => {
           : "",
         picturePreview: data.picturePath
           ? `${API_URL}/${data.picturePath}?t=${Date.now()}`
-          : `${(data.fName?.[0] || "T")}${(data.lName?.[0] || "W")}`,
-          picture:null,
+          : `${(data.fName?.[0] || "T").toUpperCase()}${(data.lName?.[0] || "W").toUpperCase()}`,
+          picture: null,
       });
     } catch (err) {
       setErrors({ general: err.message });
@@ -108,16 +120,42 @@ const Settings = () => {
   // ==================== HANDLERS ====================
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setUserData((prev) => ({ ...prev, [name]: value }));
+    let updatedValue = value;
+    
+    // Capitalize first letter for name fields
+    if (["fName", "mName", "lName"].includes(name) && value.length > 0) {
+      updatedValue = value.charAt(0).toUpperCase() + value.slice(1);
+    }
+    
+    setUserData((prev) => ({ ...prev, [name]: updatedValue }));
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUserData((prev) => ({
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUserData((prev) => ({
+          ...prev,
+          picture: file,
+          picturePreview: reader.result,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePicture = () => {
+    setUserData((prev) => ({
+      ...prev,
+      picture: null,
+      picturePreview: getDefaultAvatar(prev.fName, prev.lName),
+    }));
+
+    if (setAuth) {
+      setAuth((prev) => ({
         ...prev,
-        picture: file,
-        picturePreview: URL.createObjectURL(file),
+        profileImage: "",
       }));
     }
   };
@@ -166,14 +204,10 @@ const Settings = () => {
 
         setAuth((prev) => ({
           ...prev,
-          fName: updatedData.fName || prev.fName,
-          lName: updatedData.lName || prev.lName,
+          fName: updatedData.fName ?? updatedData.fname ?? prev.fName,
+          lName: updatedData.lName ?? updatedData.lname ?? prev.lName,
           profileImage,
         }));
-
-        localStorage.setItem("fName", updatedData.fName || auth?.fName);
-        localStorage.setItem("lName", updatedData.lName || auth?.lName);
-        localStorage.setItem("profileImage", profileImage);
       }
 
       setSuccess("Profile updated successfully!");
@@ -262,7 +296,16 @@ const Settings = () => {
     }
   };
 
-  if (loading) return <Loader />;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Loader className="w-12 h-12 text-[#FF6404] animate-spin mb-4 mx-auto" />
+          <p className="text-gray-600 font-medium">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -273,37 +316,55 @@ const Settings = () => {
           <p className="text-gray-600">Manage your profile and security settings</p>
         </div>
 
+        {/* Superadmin Notice */}
+        {isSuperAdmin && (
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-8 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-amber-900 font-semibold">⚠️ Superadmin Account</p>
+              <p className="text-amber-800 text-sm mt-1">Superadmin account settings cannot be edited for security reasons.</p>
+            </div>
+          </div>
+        )}
+
         {/* Alerts */}
         {errors.general && <Alert type="error" message={errors.general} />}
         {passwordErrors.general && <Alert type="error" message={passwordErrors.general} />}
         {success && <Alert type="success" message={success} />}
 
         {/* Profile Section */}
-        <div className="bg-white rounded-2xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl font-bold text-[#5C7D92] mb-6">Profile Information</h2>
-          <ProfileForm
-            userData={userData}
-            errors={errors}
-            onChange={handleChange}
-            onFileChange={handleFileChange}
-            onSubmit={handleProfileSubmit}
-            saving={savingProfile}
-          />
-        </div>
+        <fieldset disabled={isSuperAdmin}>
+          <div className="bg-white rounded-2xl shadow-md p-8 mb-8">
+            <h2 className="text-2xl font-bold text-[#5C7D92] mb-6">Profile Information</h2>
+            <ProfileForm
+              userData={userData}
+              errors={errors}
+              onChange={handleChange}
+              onFileChange={handleFileChange}
+              onSubmit={handleProfileSubmit}
+              saving={savingProfile}
+              onRemovePicture={handleRemovePicture}
+              disabled={isSuperAdmin}
+            />
+          </div>
+        </fieldset>
 
         {/* Password Section */}
-        <div className="bg-white rounded-2xl shadow-md p-8">
-          <h2 className="text-2xl font-bold text-[#5C7D92] mb-6">Security Settings</h2>
-          <PasswordForm
-            passwordData={passwordData}
-            errors={passwordErrors}
-            onChange={handlePasswordChange}
-            onSubmit={handlePasswordSubmit}
-            saving={savingPassword}
-            isCurrentPasswordValid={isCurrentPasswordValid}
-            isLocked={isLocked}
-          />
-        </div>
+        <fieldset disabled={isSuperAdmin}>
+          <div className="bg-white rounded-2xl shadow-md p-8">
+            <h2 className="text-2xl font-bold text-[#5C7D92] mb-6">Security Settings</h2>
+            <PasswordForm
+              passwordData={passwordData}
+              errors={passwordErrors}
+              onChange={handlePasswordChange}
+              onSubmit={handlePasswordSubmit}
+              saving={savingPassword}
+              isCurrentPasswordValid={isCurrentPasswordValid}
+              isLocked={isLocked}
+              disabled={isSuperAdmin}
+            />
+          </div>
+        </fieldset>
       </div>
     </div>
   );
@@ -312,7 +373,8 @@ const Settings = () => {
 // ==================== UI COMPONENTS ====================
 const Alert = ({ type, message }) => (
   <div
-    className={`mb-6 p-4 rounded-lg border-l-4 flex items-start gap-3 ${type === "error"
+    className={`mb-6 p-4 rounded-lg border-l-4 flex items-start gap-3 ${
+      type === "error"
         ? "bg-red-50 border-red-500 text-red-700"
         : "bg-green-50 border-green-500 text-green-700"
       }`}
@@ -326,44 +388,51 @@ const Alert = ({ type, message }) => (
   </div>
 );
 
-const LoaderComponent = () => (
-  <div className="flex items-center justify-center h-screen">
-    <div className="text-center">
-      <Loader className="w-12 h-12 text-[#FF6404] animate-spin mb-4 mx-auto" />
-      <p className="text-gray-600 font-medium">Loading profile...</p>
-    </div>
-  </div>
-);
-
-const ProfileForm = ({ userData, errors, onChange, onFileChange, onSubmit, saving }) => (
-  <form onSubmit={onSubmit}>
+const ProfileForm = ({ userData, errors, onChange, onFileChange, onSubmit, saving, onRemovePicture, disabled }) => (
+  <div onSubmit={onSubmit}>
     {/* Profile Picture */}
     <div className="mb-8 flex flex-col items-center">
-      <div className="relative mb-4">
-        {userData.picturePreview ? (
+      <div className={`relative inline-block group ${disabled ? 'pointer-events-none' : ''}`}>
+        {userData.picturePreview?.startsWith("data:") || userData.picturePreview?.startsWith("http") ? (
           <img
             src={userData.picturePreview}
             alt="Profile"
-            className="w-32 h-32 rounded-full object-cover border-4 border-[#FF6404]"
+            className={`w-40 h-40 rounded-full object-cover border-4 border-[#FF6404] bg-gradient-to-br from-[#5C7D92] to-[#FF6404] shadow-lg ${disabled ? 'opacity-40 grayscale' : ''}`}
           />
         ) : (
-          <div className="w-32 h-32 rounded-full flex items-center justify-center text-5xl font-bold text-white bg-gradient-to-br from-[#5C7D92] to-[#FF6404] border-4 border-[#FF6404]">
-            {`${userData.fName[0] || "R"}${userData.lName[0] || "J"}`}
+          <div className={`w-40 h-40 rounded-full flex items-center justify-center text-7xl font-bold text-white bg-gradient-to-br from-[#5C7D92] to-[#FF6404] border-4 border-[#FF6404] shadow-lg ${disabled ? 'opacity-40 grayscale' : ''}`}>
+            {disabled ? 'SA' : (userData.picturePreview || getDefaultAvatar(userData.fName, userData.lName))}
           </div>
         )}
-        <label
-          htmlFor="upload"
-          className="absolute bottom-0 right-0 bg-[#FF6404] hover:bg-[#e55a00] text-white text-xs px-3 py-2 rounded-full cursor-pointer transition-colors shadow-lg"
-        >
-          Edit
-        </label>
-        <input
-          id="upload"
-          type="file"
-          accept="image/*"
-          onChange={onFileChange}
-          className="hidden"
-        />
+
+        {/* Overlay on Hover */}
+        {!disabled && (
+          <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
+            {/* Edit Button */}
+            <label
+              htmlFor="upload"
+              className="bg-[#FF6404] hover:bg-[#e55a00] text-white p-3 rounded-full cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-110"
+            >
+              <Camera size={20} />
+            </label>
+            <input
+              id="upload"
+              type="file"
+              accept="image/*"
+              onChange={onFileChange}
+              className="hidden"
+            />
+
+            {/* Remove Button */}
+            <button
+              type="button"
+              onClick={onRemovePicture}
+              className="bg-red-500 hover:bg-red-600 text-white p-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-110"
+            >
+              <Trash2 size={20} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
 
@@ -375,22 +444,22 @@ const ProfileForm = ({ userData, errors, onChange, onFileChange, onSubmit, savin
 
     {/* Personal Information */}
     <FieldGroup title="Personal Information">
-      <Field label="First Name" name="fName" value={userData.fName} onChange={onChange} error={errors.fName} />
-      <Field label="Middle Name" name="mName" value={userData.mName} onChange={onChange} />
-      <Field label="Last Name" name="lName" value={userData.lName} onChange={onChange} error={errors.lName} />
-      <Field label="Phone Number" name="phoneNumber" value={userData.phoneNumber} onChange={onChange} error={errors.phoneNumber} />
-      <Field label="Birth Date" name="birthDate" type="date" value={userData.birthDate} onChange={onChange} />
+      <Field label="First Name" name="fName" value={userData.fName} onChange={onChange} error={errors.fName} disabled={disabled} />
+      <Field label="Middle Name" name="mName" value={userData.mName} onChange={onChange} disabled={disabled} />
+      <Field label="Last Name" name="lName" value={userData.lName} onChange={onChange} error={errors.lName} disabled={disabled} />
+      <Field label="Phone Number" name="phoneNumber" value={userData.phoneNumber} onChange={onChange} error={errors.phoneNumber} disabled={disabled} />
+      <Field label="Birth Date" name="birthDate" type="date" value={userData.birthDate} onChange={onChange} disabled={disabled} />
     </FieldGroup>
 
     {/* Address */}
     <FieldGroup title="Address">
-      <Field label="Street" name="street" value={userData.street} onChange={onChange} />
-      <Field label="Barangay" name="barangay" value={userData.barangay} onChange={onChange} />
-      <Field label="City" name="city" value={userData.city} onChange={onChange} error={errors.city} />
-      <Field label="Province" name="province" value={userData.province} onChange={onChange} error={errors.province} />
-      <Field label="Region" name="region" value={userData.region} onChange={onChange} />
-      <Field label="Country" name="country" value={userData.country} onChange={onChange} error={errors.country} />
-      <Field label="Zip Code" name="zipCode" value={userData.zipCode} onChange={onChange} />
+      <Field label="Street" name="street" value={userData.street} onChange={onChange} disabled={disabled} />
+      <Field label="Barangay" name="barangay" value={userData.barangay} disabled={true} />
+      <Field label="City" name="city" value={userData.city} disabled={true} />
+      <Field label="Province" name="province" value={userData.province} disabled={true} />
+      <Field label="Region" name="region" value={userData.region} disabled={true} />
+      <Field label="Country" name="country" value={userData.country} disabled={true} />
+      <Field label="Zip Code" name="zipCode" value={userData.zipCode} disabled={true} />
     </FieldGroup>
 
     {/* Account Status */}
@@ -401,14 +470,18 @@ const ProfileForm = ({ userData, errors, onChange, onFileChange, onSubmit, savin
 
     <div className="flex justify-end pt-4">
       <button
-        type="submit"
-        disabled={saving}
-        className="px-8 py-2.5 bg-[#FF6404] hover:bg-[#e55a00] text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 shadow-md hover:shadow-lg"
+        onClick={onSubmit}
+        disabled={saving || disabled}
+        className={`px-8 py-2.5 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${
+          disabled 
+            ? 'bg-gray-400 cursor-not-allowed opacity-50' 
+            : 'bg-[#FF6404] hover:bg-[#e55a00] disabled:opacity-50'
+        }`}
       >
         {saving ? "Saving..." : "Save Changes"}
       </button>
     </div>
-  </form>
+  </div>
 );
 
 const PasswordForm = ({
@@ -418,14 +491,15 @@ const PasswordForm = ({
   onSubmit,
   saving,
   isCurrentPasswordValid,
-  isLocked
+  isLocked,
+  disabled,
 }) => (
   <div>
     <p className="text-gray-600 text-sm mb-6">
       Please enter your current password first before setting a new password.
     </p>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <FieldGroup title="Change Password">
       <Field
         label="Current Password"
         name="currentPassword"
@@ -433,6 +507,7 @@ const PasswordForm = ({
         value={passwordData.currentPassword}
         onChange={onChange}
         error={errors.currentPassword}
+        disabled={disabled}
       />
 
       {isCurrentPasswordValid && !isLocked && (
@@ -444,6 +519,7 @@ const PasswordForm = ({
             value={passwordData.newPassword}
             onChange={onChange}
             error={errors.newPassword}
+            disabled={disabled}
           />
           <Field
             label="Confirm Password"
@@ -452,18 +528,22 @@ const PasswordForm = ({
             value={passwordData.confirmPassword}
             onChange={onChange}
             error={errors.confirmPassword}
+            disabled={disabled}
           />
         </>
       )}
-    </div>
+    </FieldGroup>
 
     {isCurrentPasswordValid && !isLocked && (
-      <div className="flex justify-end pt-4 border-t border-gray-200">
+      <div className="flex justify-end pt-4">
         <button
-          type="button"
           onClick={onSubmit}
-          disabled={saving}
-          className="px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 shadow-md hover:shadow-lg mt-4"
+          disabled={saving || disabled}
+          className={`px-8 py-2.5 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${
+            disabled 
+              ? 'bg-gray-400 cursor-not-allowed opacity-50' 
+              : 'bg-green-600 hover:bg-green-700 disabled:opacity-50'
+          }`}
         >
           {saving ? "Saving..." : "Change Password"}
         </button>
@@ -474,19 +554,20 @@ const PasswordForm = ({
 
 const Field = ({ label, name, value, onChange, type = "text", disabled, error }) => (
   <div>
-    <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
+    <label className={`block text-sm font-semibold mb-2 ${disabled ? 'text-gray-500' : 'text-gray-700'}`}>{label}</label>
     <input
       type={type}
       name={name}
       value={value}
       onChange={onChange}
       disabled={disabled}
-      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6404] transition-colors ${disabled
-          ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed"
+      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none transition-colors ${
+        disabled
+          ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed opacity-50"
           : error
-            ? "border-red-500 bg-red-50"
-            : "border-gray-300 focus:border-[#FF6404]"
-        }`}
+            ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-[#FF6404]"
+            : "border-gray-300 focus:border-[#FF6404] focus:ring-2 focus:ring-[#FF6404]"
+      }`}
     />
     {error && <p className="text-red-600 text-sm mt-1.5">{error}</p>}
   </div>

@@ -3,6 +3,20 @@ import { useNavigate, Link } from "react-router-dom";
 import { API_URL } from "../config/constants";
 import { useAuth } from "../context/AuthProvider";
 
+// Location mapping for Barangay Taboc
+const BARANGAY_DATA = {
+  "Barangay Taboc": {
+    barangay: "Barangay Taboc",
+    city: "San Juan",
+    province: "La Union",
+    region: "Region I (Ilocos Region)",
+    country: "Philippines",
+    zipCode: "2514",
+  },
+};
+
+const BARANGAY_LIST = Object.keys(BARANGAY_DATA);
+
 function Signup() {
   const [form, setForm] = useState({
     email: "",
@@ -14,12 +28,12 @@ function Signup() {
     phoneNumber: "",
     birthDate: "",
     street: "",
-    barangay: "",
-    city: "",
-    province: "",
-    region: "",
-    country: "",
-    zipCode: "",
+    barangay: "Barangay Taboc",
+    city: "San Juan",
+    province: "La Union",
+    region: "Region I (Ilocos Region)",
+    country: "Philippines",
+    zipCode: "2514",
   });
 
   const [error, setError] = useState("");
@@ -33,7 +47,14 @@ function Signup() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    let updatedValue = value;
+
+    // Auto-capitalize first letter for name fields
+    if (["fName", "mName", "lName", "street"].includes(name) && value.length > 0) {
+      updatedValue = value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    setForm((prev) => ({ ...prev, [name]: updatedValue }));
   }
 
   function validateFields() {
@@ -286,7 +307,7 @@ function Signup() {
               </div>
 
               {/* STREET */}
-              <div>
+              <div className="col-span-2">
                 <label className="block mb-1 font-medium text-sm">Street</label>
                 <input
                   type="text"
@@ -301,14 +322,15 @@ function Signup() {
               </div>
 
               {/* BARANGAY */}
-              <div>
+              <div className="col-span-2">
                 <label className="block mb-1 font-medium text-sm">Barangay</label>
                 <input
                   type="text"
                   name="barangay"
                   value={form.barangay}
                   onChange={handleChange}
-                  className={`w-full p-2 text-sm border rounded-lg ${
+                  disabled
+                  className={`w-full p-2 text-sm border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed ${
                     fieldErrors.barangay ? "border-red-500" : "border-gray-300"
                   }`}
                 />
@@ -316,14 +338,15 @@ function Signup() {
               </div>
 
               {/* CITY */}
-              <div>
+              <div className="col-span-2">
                 <label className="block mb-1 font-medium text-sm">City</label>
                 <input
                   type="text"
                   name="city"
                   value={form.city}
                   onChange={handleChange}
-                  className={`w-full p-2 text-sm border rounded-lg ${
+                  disabled
+                  className={`w-full p-2 text-sm border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed ${
                     fieldErrors.city ? "border-red-500" : "border-gray-300"
                   }`}
                 />
@@ -331,14 +354,15 @@ function Signup() {
               </div>
 
               {/* PROVINCE */}
-              <div>
+              <div className="col-span-2">
                 <label className="block mb-1 font-medium text-sm">Province</label>
                 <input
                   type="text"
                   name="province"
                   value={form.province}
                   onChange={handleChange}
-                  className={`w-full p-2 text-sm border rounded-lg ${
+                  disabled
+                  className={`w-full p-2 text-sm border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed ${
                     fieldErrors.province ? "border-red-500" : "border-gray-300"
                   }`}
                 />
@@ -346,14 +370,15 @@ function Signup() {
               </div>
 
               {/* REGION */}
-              <div>
+              <div className="col-span-2">
                 <label className="block mb-1 font-medium text-sm">Region</label>
                 <input
                   type="text"
                   name="region"
                   value={form.region}
                   onChange={handleChange}
-                  className={`w-full p-2 text-sm border rounded-lg ${
+                  disabled
+                  className={`w-full p-2 text-sm border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed ${
                     fieldErrors.region ? "border-red-500" : "border-gray-300"
                   }`}
                 />
@@ -361,14 +386,15 @@ function Signup() {
               </div>
 
               {/* COUNTRY */}
-              <div>
+              <div className="col-span-2">
                 <label className="block mb-1 font-medium text-sm">Country</label>
                 <input
                   type="text"
                   name="country"
                   value={form.country}
                   onChange={handleChange}
-                  className={`w-full p-2 text-sm border rounded-lg ${
+                  disabled
+                  className={`w-full p-2 text-sm border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed ${
                     fieldErrors.country ? "border-red-500" : "border-gray-300"
                   }`}
                 />
@@ -376,14 +402,15 @@ function Signup() {
               </div>
 
               {/* ZIP CODE */}
-              <div>
+              <div className="col-span-2">
                 <label className="block mb-1 font-medium text-sm">Zip Code</label>
                 <input
                   type="text"
                   name="zipCode"
                   value={form.zipCode}
                   onChange={handleChange}
-                  className={`w-full p-2 text-sm border rounded-lg ${
+                  disabled
+                  className={`w-full p-2 text-sm border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed ${
                     fieldErrors.zipCode ? "border-red-500" : "border-gray-300"
                   }`}
                 />

@@ -19,6 +19,7 @@ function Documents() {
   const [budgetDescription, setBudgetDescription] = useState("");
   const [budgetSubmitting, setBudgetSubmitting] = useState(false);
   const [budgetsByDoc, setBudgetsByDoc] = useState({});
+  const [allowPastYears, setAllowPastYears] = useState(false);
 
   const fetchDocuments = async () => {
     if (!auth?.token) return;
@@ -87,6 +88,27 @@ function Documents() {
   // Handle budget creation
   const handleCreateBudget = async (e) => {
     e.preventDefault();
+    
+    // Validate fiscal year
+    const year = parseInt(budgetFiscalYear);
+    const currentYear = new Date().getFullYear();
+    
+    if (isNaN(year)) {
+      alert("Please enter a valid fiscal year");
+      return;
+    }
+    
+    // Only check for past years if the checkbox is not enabled
+    if (!allowPastYears && year < currentYear) {
+      alert(`Fiscal year cannot be before the current year (${currentYear}). Check "Allow past years" if you need to enter historical data.`);
+      return;
+    }
+    
+    if (year > currentYear + 10) {
+      alert("Fiscal year cannot be more than 10 years in the future");
+      return;
+    }
+    
     if (!selectedDocId || !budgetFiscalYear || !budgetAmount) {
       alert("Please fill all required fields");
       return;
@@ -202,13 +224,28 @@ function Documents() {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Fiscal Year</label>
                 <input
-                  type="text"
+                  type="number"
                   value={budgetFiscalYear}
                   onChange={(e) => setBudgetFiscalYear(e.target.value)}
                   className="mt-1 block w-full border border-gray-300 rounded p-2"
                   placeholder="e.g., 2025"
+                  min={allowPastYears ? "2000" : new Date().getFullYear()}
+                  max={new Date().getFullYear() + 10}
+                  step="1"
                   required
                 />
+                <div className="mt-2 flex items-center">
+                  <input
+                    type="checkbox"
+                    id="allowPastYears"
+                    checked={allowPastYears}
+                    onChange={(e) => setAllowPastYears(e.target.checked)}
+                    className="h-4 w-4 text-[#FF6404] focus:ring-[#FF6404] border-gray-300 rounded"
+                  />
+                  <label htmlFor="allowPastYears" className="ml-2 text-sm text-gray-600">
+                    Allow past years (for historical data entry)
+                  </label>
+                </div>
               </div>
 
               <div>
@@ -219,6 +256,8 @@ function Documents() {
                   onChange={(e) => setBudgetAmount(e.target.value)}
                   className="mt-1 block w-full border border-gray-300 rounded p-2"
                   placeholder="e.g., 5000000"
+                  min="0"
+                  step="0.01"
                   required
                 />
               </div>

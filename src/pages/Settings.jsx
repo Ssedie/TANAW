@@ -69,19 +69,22 @@ const Settings = () => {
       if (!response.ok) throw new Error("Failed to fetch profile");
       const data = await response.json();
 
+      const fName = data.fName || data.fname || "";
+      const lName = data.lName || data.lname || "";
+
       setUserData({
         ...userData,
         ...data,
-        fName: data.fName || data.fname || "",
+        fName,
         mName: data.mName || data.mname || "",
-        lName: data.lName || data.lname || "",
+        lName,
         birthDate: data.birthDate
           ? new Date(data.birthDate).toISOString().split("T")[0]
           : "",
         picturePreview: data.picturePath
           ? `${API_URL}/${data.picturePath}?t=${Date.now()}`
-          : `${(data.fName?.[0] || "T").toUpperCase()}${(data.lName?.[0] || "W").toUpperCase()}`,
-          picture: null,
+          : "",
+        picture: null,
       });
     } catch (err) {
       setErrors({ general: err.message });
@@ -149,7 +152,7 @@ const Settings = () => {
     setUserData((prev) => ({
       ...prev,
       picture: null,
-      picturePreview: getDefaultAvatar(prev.fName, prev.lName),
+      picturePreview: "",
     }));
 
     if (setAuth) {
@@ -194,7 +197,7 @@ const Settings = () => {
         picture: null,
         picturePreview: updatedData.picturePath
           ? `${API_URL}/${updatedData.picturePath}?t=${Date.now()}`
-          : prev.picturePreview,
+          : "",
       }));
 
       if (setAuth) {
@@ -393,7 +396,7 @@ const ProfileForm = ({ userData, errors, onChange, onFileChange, onSubmit, savin
     {/* Profile Picture */}
     <div className="mb-8 flex flex-col items-center">
       <div className={`relative inline-block group ${disabled ? 'pointer-events-none' : ''}`}>
-        {userData.picturePreview?.startsWith("data:") || userData.picturePreview?.startsWith("http") ? (
+        {userData.picturePreview && (userData.picturePreview.startsWith("data:") || userData.picturePreview.startsWith("http")) ? (
           <img
             src={userData.picturePreview}
             alt="Profile"
@@ -401,7 +404,7 @@ const ProfileForm = ({ userData, errors, onChange, onFileChange, onSubmit, savin
           />
         ) : (
           <div className={`w-40 h-40 rounded-full flex items-center justify-center text-7xl font-bold text-white bg-gradient-to-br from-[#5C7D92] to-[#FF6404] border-4 border-[#FF6404] shadow-lg ${disabled ? 'opacity-40 grayscale' : ''}`}>
-            {disabled ? 'SA' : (userData.picturePreview || getDefaultAvatar(userData.fName, userData.lName))}
+            {disabled ? 'SA' : getDefaultAvatar(userData.fName, userData.lName)}
           </div>
         )}
 

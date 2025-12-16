@@ -32,7 +32,11 @@ export default function Budget() {
       .catch(console.error);
 
     axios.get(`${API_URL}/api/dashboard/fiscal-years/available`, { headers })
-      .then(res => setAvailableFiscalYears(res.data))
+      .then(res => {
+        // Sort fiscal years numerically in descending order (newest first)
+        const sortedYears = res.data.sort((a, b) => parseInt(b) - parseInt(a));
+        setAvailableFiscalYears(sortedYears);
+      })
       .catch(console.error);
   }, [auth]);
 
@@ -48,7 +52,13 @@ export default function Budget() {
 
     // Get budget summary for all years
     axios.get(`${API_URL}/api/dashboard/budget-summary-all-years`, { headers })
-      .then(res => setBudgetSummary(res.data))
+      .then(res => {
+        // Sort budget summary by fiscal year (ascending for chronological display)
+        const sortedSummary = res.data.sort((a, b) => 
+          parseInt(a.fiscalYear) - parseInt(b.fiscalYear)
+        );
+        setBudgetSummary(sortedSummary);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [auth]);

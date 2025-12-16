@@ -1,17 +1,23 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthProvider";
-import { Trash2, RotateCcw, Eye, CheckCircle, XCircle, X } from "lucide-react";
+import { Trash2, Eye, CheckCircle, XCircle, X, Search } from "lucide-react";
 
 const AdminDashboardContent = () => {
   const { auth } = useAuth();
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [deleteUserId, setDeleteUserId] = useState(null);
   const [statusChangeUserId, setStatusChangeUserId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  
+  // Search states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState("ALL");
 
   useEffect(() => {
     if (!auth?.token) return;
@@ -22,6 +28,7 @@ const AdminDashboardContent = () => {
           headers: { Authorization: `Bearer ${auth.token}` },
         });
         setUsers(response.data);
+        setFilteredUsers(response.data);
       } catch (err) {
         console.error("Error fetching users:", err);
         setError(err.response?.data?.message || "Failed to fetch users");
@@ -32,6 +39,34 @@ const AdminDashboardContent = () => {
 
     fetchUsers();
   }, [auth]);
+
+  // Search and filter logic
+  useEffect(() => {
+    let result = [...users];
+
+    // Text search
+    if (searchTerm.trim() !== "") {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(user => 
+        `${user.fname} ${user.mname} ${user.lname}`.toLowerCase().includes(term) ||
+        user.email?.toLowerCase().includes(term) ||
+        user.phoneNumber?.toLowerCase().includes(term) ||
+        user.userId?.toString().includes(term)
+      );
+    }
+
+    // Role filter
+    if (filterRole !== "ALL") {
+      result = result.filter(user => user.role === filterRole);
+    }
+
+    // Status filter
+    if (filterStatus !== "ALL") {
+      result = result.filter(user => user.accountStatus === filterStatus);
+    }
+
+    setFilteredUsers(result);
+  }, [searchTerm, filterRole, filterStatus, users]);
 
   const handleRoleChange = async (userId, newRole) => {
     try {
@@ -126,6 +161,12 @@ const AdminDashboardContent = () => {
     return `${(user.fname?.[0] || "T").toUpperCase()}${(user.lname?.[0] || "W").toUpperCase()}`;
   };
 
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterRole("ALL");
+    setFilterStatus("ALL");
+  };
+
   if (loading) return <div className="p-6 text-gray-600">Loading users...</div>;
   if (error) return <div className="p-6 text-red-600">Error: {error}</div>;
 
@@ -136,8 +177,68 @@ const AdminDashboardContent = () => {
         <p className="text-gray-600 mt-1">Manage all users and their accounts</p>
       </div>
 
-      {users.length === 0 ? (
-        <div className="text-center text-gray-600 py-10 bg-white rounded-lg">No users found</div>
+      {/* Search and Filter Section */}
+      <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search Input */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search by name, email, phone, or ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6404] focus:border-transparent"
+            />
+          </div>
+
+          {/* Role Filter */}
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6404] focus:border-transparent"
+          >
+            <option value="ALL">All Roles</option>
+            <option value="ADMIN">Admin</option>
+            <option value="CITIZEN">Citizen</option>
+          </select>
+
+          {/* Status Filter */}
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6404] focus:border-transparent"
+          >
+            <option value="ALL">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+
+          {/* Clear Filters Button */}
+          {(searchTerm || filterRole !== "ALL" || filterStatus !== "ALL") && (
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition duration-200"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {/* Results Count */}
+        <div className="mt-4 text-sm text-gray-600">
+          Showing <span className="font-semibold text-[#FF6404]">{filteredUsers.length}</span> of{" "}
+          <span className="font-semibold">{users.length}</span> users
+        </div>
+      </div>
+
+      {/* Users Table */}
+      {filteredUsers.length === 0 ? (
+        <div className="text-center text-gray-600 py-10 bg-white rounded-lg">
+          {searchTerm || filterRole !== "ALL" || filterStatus !== "ALL" 
+            ? "No users found matching your search criteria" 
+            : "No users found"}
+        </div>
       ) : (
         <div className="overflow-x-auto bg-white rounded-2xl shadow-md">
           <table className="w-full border-collapse">
@@ -153,7 +254,7 @@ const AdminDashboardContent = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user, idx) => (
+              {filteredUsers.map((user, idx) => (
                 <tr
                   key={user.userId}
                   className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors duration-150 border-b border-gray-200 ${user.accountStatus !== 'ACTIVE' ? 'opacity-70' : ''}`}

@@ -44,17 +44,38 @@ function Projects() {
     setLoading(true);
 
     axios.get(`${API_URL}/api/projects/fiscal-year/current`, { headers })
-      .then(res => setCurrentFiscalYear(res.data.currentFiscalYear))
+      .then(res => {
+        setCurrentFiscalYear(res.data.currentFiscalYear);
+      })
       .catch(console.error);
 
     axios.get(`${API_URL}/api/projects`, { headers })
       .then(res => setProjects(res.data))
       .catch(console.error);
 
-    axios.get(`${API_URL}/api/projects/budgets/document`, { headers })
+    // Fetch all budgets (not filtered by current year in the dropdown)
+    axios.get(`${API_URL}/api/dashboard/fiscal-years/available`, { headers })
       .then(res => {
-        const currentYearBudgets = res.data.filter(b => b.fiscalYear === currentFiscalYear);
-        setBudgets(currentYearBudgets);
+        // For each fiscal year, fetch budgets
+        const fetchBudgetsForYear = async () => {
+          try {
+            const allBudgets = [];
+            // Get all documents first
+            const docsRes = await axios.get(`${API_URL}/api/documents?type=Project Plan`, { headers });
+            
+            // For each document, get its budgets
+            for (const doc of docsRes.data) {
+              const budgetsRes = await axios.get(`${API_URL}/api/documents/${doc.documentId}/budgets`, { headers });
+              allBudgets.push(...budgetsRes.data);
+            }
+            
+            setBudgets(allBudgets);
+          } catch (err) {
+            console.error("Error fetching budgets:", err);
+          }
+        };
+        
+        fetchBudgetsForYear();
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -79,6 +100,27 @@ function Projects() {
     };
 
     fetchActivities();
+  }, [projects, auth]);
+
+  // --- Fetch Feedbacks ---
+  useEffect(() => {
+    if (!auth?.token || projects.length === 0) return;
+    const headers = { Authorization: `Bearer ${auth.token}` };
+
+    const fetchFeedbacks = async () => {
+      const map = {};
+      for (const proj of projects) {
+        try {
+          const res = await axios.get(`${API_URL}/api/projects/${proj.projectId}/feedbacks`, { headers });
+          map[proj.projectId] = res.data;
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      setFeedbacksMap(map);
+    };
+
+    fetchFeedbacks();
   }, [projects, auth]);
 
   // --- Fetch Available Budget ---
@@ -223,13 +265,16 @@ function Projects() {
         userId: auth.userId
       }, { headers });
 
+      // Refresh feedbacks for this project
+      const feedbacksRes = await axios.get(`${API_URL}/api/projects/${projectId}/feedbacks`, { headers });
       setFeedbacksMap(prev => ({
         ...prev,
-        [projectId]: [...(prev[projectId] || []), res.data]
+        [projectId]: feedbacksRes.data
       }));
 
       setFeedbackInputMap(prev => ({ ...prev, [projectId]: "" }));
       setRatingInputMap(prev => ({ ...prev, [projectId]: 0 }));
+      alert("Feedback submitted successfully!");
     } catch (err) {
       console.error(err);
       alert("Failed to submit feedback");
@@ -264,7 +309,7 @@ function Projects() {
     dots: true,
     infinite: false,
     speed: 500,
-    slidesToShow: 3.3,
+    slidesToShow: 1,
     slidesToScroll: 1,
     swipeToSlide: true,
     arrows: true,

@@ -191,15 +191,7 @@ const AdminDashboardContent = () => {
                   <td className="py-4 px-6 text-sm text-gray-700">{user.phoneNumber || "-"}</td>
                   <td className="py-4 px-6">
                     <div className="flex gap-2 flex-wrap">
-                      {user.accountStatus === 'ACTIVE' && (
-                        <button
-                          onClick={() => handlePasswordReset(user.userId)}
-                          className="bg-[#5C7D92] hover:bg-[#4e6b7d] text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 font-medium"
-                          title="Reset Password"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      
                       <button
                         onClick={() => handleView(user)}
                         className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 font-medium"

@@ -162,7 +162,7 @@ public class UserService {
 
             String contentType = picture.getContentType();
             if (!Arrays.asList("image/jpeg", "image/jpg", "image/png", "image/gif").contains(contentType)) {
-                throw new RuntimeException("Invalid file type");
+                throw new IllegalArgumentException("Invalid file type");
             }
             if (picture.getSize() > 5 * 1024 * 1024) {
                 throw new RuntimeException("File size exceeds 5MB");

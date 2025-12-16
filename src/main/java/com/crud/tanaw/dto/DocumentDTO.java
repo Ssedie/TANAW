@@ -15,6 +15,7 @@ public class DocumentDTO {
     @NotBlank(message = "Please provide the title of the document.")
     private String documentTitle;
 
+
     private Double totalBudget;
 
     @NotNull(message = "Please provide the actual date of upload.")

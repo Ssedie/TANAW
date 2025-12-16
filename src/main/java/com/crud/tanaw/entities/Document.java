@@ -20,7 +20,7 @@ public class Document {
 
     private String content;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Double totalBudget;
 
     @Temporal(TemporalType.TIMESTAMP)

@@ -140,4 +140,22 @@ public class ApiAdminDashboardController {
         return ResponseEntity.ok("User deleted successfully");
     }
 
+    @PutMapping("/status/{userId}")
+    public ResponseEntity<?> updateAccountStatus(
+            @PathVariable Integer userId,
+            @RequestParam String accountStatus,
+            Authentication auth
+    ) {
+        if (!SecurityUtil.isAdmin(auth)) {
+            return ResponseEntity.status(403).body("Forbidden");
+        }
+
+        User target = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        target.setAccountStatus(accountStatus.toUpperCase());
+        userRepository.save(target);
+
+        return ResponseEntity.ok("Account status updated successfully");
+    }
 }

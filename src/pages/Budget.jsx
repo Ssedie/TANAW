@@ -1,4 +1,3 @@
-// src/pages/Budget.jsx
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { API_URL } from "../config/constants";
@@ -6,8 +5,9 @@ import { useAuth } from "../context/AuthProvider";
 import Card from "../components/Card";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line } from "recharts";
+import Pagination, { usePagination } from "../components/Pagination";
 
-export default function Budget() {
+function Budget() {
   const { auth } = useAuth();
   const [projects, setProjects] = useState([]);
   const [overview, setOverview] = useState(null);
@@ -17,6 +17,23 @@ export default function Budget() {
   const [currentFiscalYear, setCurrentFiscalYear] = useState("");
   const [selectedFiscalYear, setSelectedFiscalYear] = useState("");
   const [availableFiscalYears, setAvailableFiscalYears] = useState([]);
+
+  // Pagination hooks
+  const {
+    currentPage: projectsPage,
+    totalPages: projectsTotalPages,
+    currentItems: currentProjects,
+    goToPage: goToProjectsPage,
+    totalItems: totalProjects
+  } = usePagination(projects, 7);
+
+  const {
+    currentPage: summaryPage,
+    totalPages: summaryTotalPages,
+    currentItems: currentSummary,
+    goToPage: goToSummaryPage,
+    totalItems: totalSummaryItems
+  } = usePagination(budgetSummary, 7);
 
   // --- Fetch current fiscal year and available years ---
   useEffect(() => {
@@ -208,7 +225,7 @@ export default function Budget() {
         )}
       </Card>
 
-      {/* Detailed Project Budget Breakdown */}
+      {/* Detailed Project Budget Breakdown with Pagination */}
       <Card className="mb-8">
         <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Project Budget Breakdown (FY {selectedFiscalYear})</h2>
         <div className="overflow-x-auto">
@@ -225,7 +242,7 @@ export default function Budget() {
               </tr>
             </thead>
             <tbody>
-              {projects.map(p => {
+              {currentProjects.map(p => {
                 const spent = projectSpentMap[p.projectId] || 0;
                 const allocated = Number(p.allocatedBudget || 0);
                 const remaining = allocated - spent;
@@ -267,9 +284,16 @@ export default function Budget() {
         {projects.length === 0 && (
           <p className="text-gray-500 text-center py-4">No projects for this fiscal year</p>
         )}
+        <Pagination
+          currentPage={projectsPage}
+          totalPages={projectsTotalPages}
+          onPageChange={goToProjectsPage}
+          itemsPerPage={7}
+          totalItems={totalProjects}
+        />
       </Card>
 
-      {/* Budget Summary for All Years */}
+      {/* Budget Summary for All Years with Pagination */}
       <Card>
         <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Historical Budget Summary</h2>
         <div className="overflow-x-auto">
@@ -284,7 +308,7 @@ export default function Budget() {
               </tr>
             </thead>
             <tbody>
-              {budgetSummary.map(year => {
+              {currentSummary.map(year => {
                 const utilization = year.totalBudget > 0 ? ((year.totalSpent / year.totalBudget) * 100).toFixed(1) : 0;
 
                 return (
@@ -313,7 +337,16 @@ export default function Budget() {
         {budgetSummary.length === 0 && (
           <p className="text-gray-500 text-center py-4">No budget data available</p>
         )}
+        <Pagination
+          currentPage={summaryPage}
+          totalPages={summaryTotalPages}
+          onPageChange={goToSummaryPage}
+          itemsPerPage={7}
+          totalItems={totalSummaryItems}
+        />
       </Card>
     </div>
   );
 }
+
+export default Budget;

@@ -1,8 +1,8 @@
-// src/pages/Documents.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "../config/constants";
 import { useAuth } from "../context/AuthProvider";
+import Pagination, { usePagination } from "../components/Pagination";
 
 function Documents() {
   const { auth } = useAuth();
@@ -20,6 +20,15 @@ function Documents() {
   const [budgetSubmitting, setBudgetSubmitting] = useState(false);
   const [budgetsByDoc, setBudgetsByDoc] = useState({});
   const [allowPastYears, setAllowPastYears] = useState(false);
+
+  // Pagination
+  const {
+    currentPage: docsPage,
+    totalPages: docsTotalPages,
+    currentItems: currentDocuments,
+    goToPage: goToDocsPage,
+    totalItems: totalDocs
+  } = usePagination(documents, 7);
 
   const fetchDocuments = async () => {
     if (!auth?.token) return;
@@ -116,7 +125,7 @@ function Documents() {
 
     try {
       setBudgetSubmitting(true);
-      const response = await axios.post(
+      await axios.post(
         `${API_URL}/api/documents/budget`,
         {
           documentId: selectedDocId,
@@ -285,49 +294,58 @@ function Documents() {
         </>
       )}
 
-      {/* Document List */}
+      {/* Document List with Pagination */}
       <div className="bg-white shadow rounded p-6">
         <h2 className="text-xl font-semibold mb-4">Uploaded Documents</h2>
         {documents.length === 0 ? (
           <p>No documents uploaded yet.</p>
         ) : (
-          <ul className="space-y-4">
-            {documents.map((doc) => (
-              <div key={doc.documentId} className="p-4 border rounded hover:bg-gray-50">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="font-medium text-lg">{doc.documentTitle}</div>
-                    <div className="text-sm text-gray-500">{doc.documentType}</div>
+          <>
+            <ul className="space-y-4">
+              {currentDocuments.map((doc) => (
+                <div key={doc.documentId} className="p-4 border rounded hover:bg-gray-50">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="font-medium text-lg">{doc.documentTitle}</div>
+                      <div className="text-sm text-gray-500">{doc.documentType}</div>
+                    </div>
+                    <a
+                      href={`${API_URL}/api/documents/${doc.documentId}/download`}
+                      className="px-3 py-1 bg-[#4B3A2F] text-white rounded text-sm hover:bg-[#3a2c24]"
+                    >
+                      Download
+                    </a>
                   </div>
-                  <a
-                    href={`${API_URL}/api/documents/${doc.documentId}/download`}
-                    className="px-3 py-1 bg-[#4B3A2F] text-white rounded text-sm hover:bg-[#3a2c24]"
-                  >
-                    Download
-                  </a>
-                </div>
 
-                {/* Show budgets for this document if it's a Project Plan */}
-                {doc.documentType === "Project Plan" && budgetsByDoc[doc.documentId] && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
-                    <p className="font-semibold text-sm mb-2">Budgets:</p>
-                    {budgetsByDoc[doc.documentId].length === 0 ? (
-                      <p className="text-sm text-gray-600">No budgets created yet</p>
-                    ) : (
-                      <ul className="space-y-1">
-                        {budgetsByDoc[doc.documentId].map((budget, idx) => (
-                          <li key={idx} className="text-sm text-gray-700">
-                            <span className="font-medium">FY {budget.fiscalYear}:</span> ₱{(budget.totalBudget || 0).toLocaleString()}
-                            {budget.description && <p className="text-xs text-gray-600">{budget.description}</p>}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </ul>
+                  {/* Show budgets for this document if it's a Project Plan */}
+                  {doc.documentType === "Project Plan" && budgetsByDoc[doc.documentId] && (
+                    <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+                      <p className="font-semibold text-sm mb-2">Budgets:</p>
+                      {budgetsByDoc[doc.documentId].length === 0 ? (
+                        <p className="text-sm text-gray-600">No budgets created yet</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {budgetsByDoc[doc.documentId].map((budget, idx) => (
+                            <li key={idx} className="text-sm text-gray-700">
+                              <span className="font-medium">FY {budget.fiscalYear}:</span> ₱{(budget.totalBudget || 0).toLocaleString()}
+                              {budget.description && <p className="text-xs text-gray-600">{budget.description}</p>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </ul>
+            <Pagination
+              currentPage={docsPage}
+              totalPages={docsTotalPages}
+              onPageChange={goToDocsPage}
+              itemsPerPage={7}
+              totalItems={totalDocs}
+            />
+          </>
         )}
       </div>
     </div>

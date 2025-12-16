@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthProvider";
 import { Trash2, Eye, CheckCircle, XCircle, X, Search } from "lucide-react";
+import Pagination, { usePagination } from "../components/Pagination";
 
 const AdminDashboardContent = () => {
   const { auth } = useAuth();
@@ -18,6 +19,15 @@ const AdminDashboardContent = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
+
+  // Pagination
+  const {
+    currentPage: usersPage,
+    totalPages: usersTotalPages,
+    currentItems: currentUsers,
+    goToPage: goToUsersPage,
+    totalItems: totalUsers
+  } = usePagination(filteredUsers, 7);
 
   useEffect(() => {
     if (!auth?.token) return;
@@ -232,7 +242,7 @@ const AdminDashboardContent = () => {
         </div>
       </div>
 
-      {/* Users Table */}
+      {/* Users Table with Pagination */}
       {filteredUsers.length === 0 ? (
         <div className="text-center text-gray-600 py-10 bg-white rounded-lg">
           {searchTerm || filterRole !== "ALL" || filterStatus !== "ALL" 
@@ -240,95 +250,103 @@ const AdminDashboardContent = () => {
             : "No users found"}
         </div>
       ) : (
-        <div className="overflow-x-auto bg-white rounded-2xl shadow-md">
-          <table className="w-full border-collapse">
-            <thead className="bg-gradient-to-r from-[#5C7D92] to-[#FF6404] text-white sticky top-0">
-              <tr>
-                <th className="py-4 px-6 text-left font-semibold">ID</th>
-                <th className="py-4 px-6 text-left font-semibold">Name</th>
-                <th className="py-4 px-6 text-left font-semibold">Email</th>
-                <th className="py-4 px-6 text-left font-semibold">Role</th>
-                <th className="py-4 px-6 text-left font-semibold">Status</th>
-                <th className="py-4 px-6 text-left font-semibold">Phone</th>
-                <th className="py-4 px-6 text-left font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user, idx) => (
-                <tr
-                  key={user.userId}
-                  className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors duration-150 border-b border-gray-200 ${user.accountStatus !== 'ACTIVE' ? 'opacity-70' : ''}`}
-                >
-                  <td className="py-4 px-6 text-sm font-medium text-gray-700 ">{user.userId}</td>
-                  <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                    {user.fname} {user.mname} {user.lname}
-                  </td>
-                  <td className="py-4 px-6 text-sm text-[#FF6404] font-medium">{user.email}</td>
-                  <td className="py-4 px-6">
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleRoleChange(user.userId, e.target.value)}
-                      disabled={user.accountStatus !== 'ACTIVE'}
-                      className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6404] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                      <option value="CITIZEN">CITIZEN</option>
-                      <option value="ADMIN">ADMIN</option>
-                    </select>
-                  </td>
-                  <td className="py-4 px-6 text-sm">
-                    <span className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${
-                      user.accountStatus === 'ACTIVE' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {user.accountStatus === 'ACTIVE' ? (
-                        <CheckCircle className="w-3.5 h-3.5" />
-                      ) : (
-                        <XCircle className="w-3.5 h-3.5" />
-                      )}
-                      {user.accountStatus}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-gray-700">{user.phoneNumber || "-"}</td>
-                  <td className="py-4 px-6">
-                    <div className="flex gap-2 flex-wrap">
-                      
-                      <button
-                        onClick={() => handleView(user)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 font-medium"
-                        title="View Details"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setStatusChangeUserId(user.userId)}
-                        className={`text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 font-medium ${
-                          user.accountStatus === 'ACTIVE'
-                            ? 'bg-yellow-500 hover:bg-yellow-600'
-                            : 'bg-green-500 hover:bg-green-600'
-                        }`}
-                        title={user.accountStatus === 'ACTIVE' ? 'Deactivate User' : 'Activate User'}
-                      >
-                        {user.accountStatus === 'ACTIVE' ? (
-                          <XCircle className="w-3.5 h-3.5" />
-                        ) : (
-                          <CheckCircle className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setDeleteUserId(user.userId)}
-                        className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 font-medium"
-                        title="Delete User"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
+        <>
+          <div className="overflow-x-auto bg-white rounded-2xl shadow-md">
+            <table className="w-full border-collapse">
+              <thead className="bg-gradient-to-r from-[#5C7D92] to-[#FF6404] text-white sticky top-0">
+                <tr>
+                  <th className="py-4 px-6 text-left font-semibold">ID</th>
+                  <th className="py-4 px-6 text-left font-semibold">Name</th>
+                  <th className="py-4 px-6 text-left font-semibold">Email</th>
+                  <th className="py-4 px-6 text-left font-semibold">Role</th>
+                  <th className="py-4 px-6 text-left font-semibold">Status</th>
+                  <th className="py-4 px-6 text-left font-semibold">Phone</th>
+                  <th className="py-4 px-6 text-left font-semibold">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {currentUsers.map((user, idx) => (
+                  <tr
+                    key={user.userId}
+                    className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors duration-150 border-b border-gray-200 ${user.accountStatus !== 'ACTIVE' ? 'opacity-70' : ''}`}
+                  >
+                    <td className="py-4 px-6 text-sm font-medium text-gray-700">{user.userId}</td>
+                    <td className="py-4 px-6 text-sm font-medium text-gray-900">
+                      {user.fname} {user.mname} {user.lname}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-[#FF6404] font-medium">{user.email}</td>
+                    <td className="py-4 px-6">
+                      <select
+                        value={user.role}
+                        onChange={(e) => handleRoleChange(user.userId, e.target.value)}
+                        disabled={user.accountStatus !== 'ACTIVE'}
+                        className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6404] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        <option value="CITIZEN">CITIZEN</option>
+                        <option value="ADMIN">ADMIN</option>
+                      </select>
+                    </td>
+                    <td className="py-4 px-6 text-sm">
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${
+                        user.accountStatus === 'ACTIVE' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {user.accountStatus === 'ACTIVE' ? (
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        ) : (
+                          <XCircle className="w-3.5 h-3.5" />
+                        )}
+                        {user.accountStatus}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-sm text-gray-700">{user.phoneNumber || "-"}</td>
+                    <td className="py-4 px-6">
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => handleView(user)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 font-medium"
+                          title="View Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setStatusChangeUserId(user.userId)}
+                          className={`text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 font-medium ${
+                            user.accountStatus === 'ACTIVE'
+                              ? 'bg-yellow-500 hover:bg-yellow-600'
+                              : 'bg-green-500 hover:bg-green-600'
+                          }`}
+                          title={user.accountStatus === 'ACTIVE' ? 'Deactivate User' : 'Activate User'}
+                        >
+                          {user.accountStatus === 'ACTIVE' ? (
+                            <XCircle className="w-3.5 h-3.5" />
+                          ) : (
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setDeleteUserId(user.userId)}
+                          className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 font-medium"
+                          title="Delete User"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            currentPage={usersPage}
+            totalPages={usersTotalPages}
+            onPageChange={goToUsersPage}
+            itemsPerPage={7}
+            totalItems={totalUsers}
+          />
+        </>
       )}
 
       {/* View User Modal */}

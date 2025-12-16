@@ -271,6 +271,7 @@ public class ApiProjectController {
         FeedbackResponseDTO dto = new FeedbackResponseDTO();
         dto.setFeedbackId(f.getFeedbackId());
         dto.setContent(f.getContent());
+        dto.setRating(f.getRating());
         dto.setUploadDate(f.getUploadDate());
 
         if (f.getProject() != null) {

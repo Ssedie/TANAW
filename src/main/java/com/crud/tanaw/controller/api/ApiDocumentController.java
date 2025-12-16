@@ -164,6 +164,15 @@ public class ApiDocumentController {
     ) {
         List<Budget> budgets = budgetRepository.findByDocumentId(documentId);
 
+        // Sort budgets by fiscal year (ascending order for chronological display)
+        budgets.sort((a, b) -> {
+            try {
+                return Integer.compare(Integer.parseInt(a.getFiscalYear()), Integer.parseInt(b.getFiscalYear()));
+            } catch (NumberFormatException e) {
+                return a.getFiscalYear().compareTo(b.getFiscalYear());
+            }
+        });
+
         List<Map<String, Object>> response = budgets.stream().map(budget -> {
             Map<String, Object> budgetInfo = new HashMap<>();
             budgetInfo.put("budgetId", budget.getBudgetId());
@@ -181,6 +190,16 @@ public class ApiDocumentController {
     @GetMapping("/fiscal-years")
     public ResponseEntity<List<String>> getAvailableFiscalYears() {
         List<String> fiscalYears = budgetRepository.findDistinctFiscalYears();
+
+        // Sort fiscal years numerically in descending order (newest first)
+        fiscalYears.sort((a, b) -> {
+            try {
+                return Integer.compare(Integer.parseInt(b), Integer.parseInt(a));
+            } catch (NumberFormatException e) {
+                return b.compareTo(a); // Fallback to string comparison
+            }
+        });
+
         return ResponseEntity.ok(fiscalYears);
     }
 

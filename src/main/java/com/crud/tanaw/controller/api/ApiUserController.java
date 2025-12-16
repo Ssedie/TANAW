@@ -3,6 +3,7 @@ package com.crud.tanaw.controller.api;
 
 import com.crud.tanaw.dto.ReqRep.ResetPasswordRequest;
 import com.crud.tanaw.dto.UserDTO;
+import com.crud.tanaw.dto.ReqRep.ForgetPasswordRequest;
 import com.crud.tanaw.dto.ReqRep.UpdateProfileRequest;
 import com.crud.tanaw.entities.ResetToken;
 import com.crud.tanaw.entities.User;
@@ -11,6 +12,7 @@ import com.crud.tanaw.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -158,32 +160,45 @@ public class ApiUserController {
     }
 
     @PostMapping("/forgot-password")
-    public Map<String, String> forgotPassword(
-            @RequestParam Long userId,
-            @RequestParam String email,
-            @RequestParam String birthDate // format: yyyy-MM-dd
-    ) {
-        User user = userService.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, Object> request) {
+        try {
+            // Parse request body
+            Long userId = Long.parseLong(request.get("userId").toString());
+            String email = request.get("email").toString();
+            String birthDate = request.get("birthDate").toString(); // format: yyyy-MM-dd
 
-        // Verify email
-        if (!user.getEmail().equalsIgnoreCase(email)) {
-            throw new RuntimeException("Email does not match user ID");
+            // Find user
+            User user = userService.findByUserId(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Verify email
+            if (!user.getEmail().equalsIgnoreCase(email)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Email does not match our records"));
+            }
+
+            // Verify birth date
+            if (!user.getBirthDate().equals(birthDate)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Birth date does not match our records"));
+            }
+
+            // Generate reset token
+            ResetToken token = userService.createResetToken(userId);
+
+            // TODO: send token via email
+            return ResponseEntity.ok(Map.of(
+                    "message", "Password reset token has been sent to your email",
+                    "token", token.getToken()
+            ));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "An error occurred. Please try again later."));
         }
-
-        // Verify birth date
-        if (!user.getBirthDate().equals(birthDate)) {
-            throw new RuntimeException("Birth date does not match our records");
-        }
-
-        // Generate reset token
-        ResetToken token = userService.createResetToken(userId);
-
-        // TODO: send token via email
-        return Map.of(
-                "message", "Password reset token has been sent to your email",
-                "token", token.getToken() // only if you want to show in frontend (not recommended)
-        );
     }
 
 

@@ -32,6 +32,10 @@ function Projects() {
   // --- Activities & Feedback ---
   const [activitiesMap, setActivitiesMap] = useState({});
   const [newActivityMap, setNewActivityMap] = useState({});
+  // --- Activity Images ---
+  const [activityImageMap, setActivityImageMap] = useState({});
+  const [activityImagePreviewMap, setActivityImagePreviewMap] = useState({});
+
   const [feedbacksMap, setFeedbacksMap] = useState({});
   const [feedbackInputMap, setFeedbackInputMap] = useState({});
   const [ratingInputMap, setRatingInputMap] = useState({});
@@ -62,19 +66,19 @@ function Projects() {
             const allBudgets = [];
             // Get all documents first
             const docsRes = await axios.get(`${API_URL}/api/documents?type=Project Plan`, { headers });
-            
+
             // For each document, get its budgets
             for (const doc of docsRes.data) {
               const budgetsRes = await axios.get(`${API_URL}/api/documents/${doc.documentId}/budgets`, { headers });
               allBudgets.push(...budgetsRes.data);
             }
-            
+
             setBudgets(allBudgets);
           } catch (err) {
             console.error("Error fetching budgets:", err);
           }
         };
-        
+
         fetchBudgetsForYear();
       })
       .catch(console.error)
@@ -216,23 +220,36 @@ function Projects() {
   // --- Add Activity ---
   const handleAddActivity = async (projectId) => {
     const activity = newActivityMap[projectId];
+    const activityImage = activityImageMap[projectId];
+
     if (!activity || !activity.activityName || !activity.type) {
       alert("Please fill all required fields");
       return;
     }
 
-    try {
-      const headers = { Authorization: `Bearer ${auth.token}` };
-      const res = await axios.post(`${API_URL}/api/activities`, {
-        activityName: activity.activityName,
-        description: activity.description,
-        date: activity.date || new Date().toISOString().split('T')[0],
-        status: activity.status || "ONGOING",
-        expenses: activity.expenses || 0,
-        type: activity.type,
-        projectId
-      }, { headers });
+    const formData = new FormData();
+    formData.append("activityName", activity.activityName);
+    formData.append("description", activity.description || "");
+    formData.append("date", activity.date || new Date().toISOString().split('T')[0]);
+    formData.append("type", activity.type);
+    formData.append("projectId", projectId);
 
+    if (activity.type === "Expense") {
+      formData.append("expenses", activity.expenses || 0);
+    }
+
+    if (activityImage) {
+      formData.append("image", activityImage);
+    }
+
+    try {
+      const headers = {
+        Authorization: `Bearer ${auth.token}`,
+        "Content-Type": "multipart/form-data"
+      };
+      const res = await axios.post(`${API_URL}/api/activities`, formData, { headers });
+
+      // Update activities list
       setActivitiesMap(prev => ({
         ...prev,
         [projectId]: [...(prev[projectId] || []), res.data]
@@ -242,9 +259,38 @@ function Projects() {
         ...prev,
         [projectId]: { activityName: "", description: "", date: new Date().toISOString().split('T')[0], expenses: 0, type: "Report" }
       }));
+
+      setActivityImageMap(prev => ({ ...prev, [projectId]: null }));
+      setActivityImagePreviewMap(prev => ({ ...prev, [projectId]: null }));
+
+      // Reset form
+      // ... rest of your code
     } catch (err) {
       console.error(err);
       alert("Failed to add activity");
+    }
+  };
+
+  const handleActivityImageChange = (projectId, file) => {
+    setActivityImageMap(prev => ({
+      ...prev,
+      [projectId]: file
+    }));
+
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setActivityImagePreviewMap(prev => ({
+          ...prev,
+          [projectId]: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setActivityImagePreviewMap(prev => ({
+        ...prev,
+        [projectId]: null
+      }));
     }
   };
 
@@ -281,6 +327,12 @@ function Projects() {
     }
   };
 
+  const getProjectCoverImage = (projectId) => {
+    const activities = activitiesMap[projectId] || [];
+    const activityWithImage = activities.find(a => a.imageUrl);
+    return activityWithImage ? `${API_URL}${activityWithImage.imageUrl}` : null;
+  };
+
   // --- Compute Average Rating ---
   const computeAvgRating = (projectId) => {
     const feedbacks = feedbacksMap[projectId] || [];
@@ -313,11 +365,7 @@ function Projects() {
     slidesToScroll: 1,
     swipeToSlide: true,
     arrows: true,
-    responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 1 } },
-      { breakpoint: 768, settings: { slidesToShow: 1 } },
-      { breakpoint: 640, settings: { slidesToShow: 1 } },
-    ],
+    adaptiveHeight: true,
   };
 
   return (
@@ -333,7 +381,7 @@ function Projects() {
 
       {/* Add Project Form */}
       {auth.role === "ADMIN" && (
-        <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-8 max-w-4xl mx-auto w-full">
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-8 w-full">
           <h2 className="text-xl md:text-2xl font-semibold mb-4">Add New Project</h2>
           <form onSubmit={handleAddProject} className="grid grid-cols-1 gap-4">
             <select value={selectedBudgetId || ""} onChange={e => setSelectedBudgetId(e.target.value ? parseInt(e.target.value) : null)} className="p-2 md:p-3 border rounded text-sm md:text-base" required>
@@ -387,14 +435,20 @@ function Projects() {
       )}
 
       {/* Projects Carousel */}
-      <div className="w-full max-w-6xl mx-auto px-2 md:px-0">
+      <div className="w-full max-w-4xl mx-auto">
         <style>{`
           .slick-slide {
-            display: flex !important;
-            justify-content: center;
+            padding: 0;
           }
           .slick-slide > div {
-            width: 100%;
+            padding: 0 15px;
+          }
+          .slick-list {
+            margin: 0;
+            overflow: visible;
+          }
+          .slick-track {
+            display: flex !important;
           }
         `}</style>
         <Slider {...sliderSettings}>
@@ -405,10 +459,30 @@ function Projects() {
             const showExpandedFeedback = expandedFeedback[proj.projectId];
 
             return (
-              <div key={proj.projectId} className="!flex justify-center px-2">
-                <div className="bg-white p-4 md:p-6 rounded-2xl shadow flex flex-col w-full max-w-2xl">
-                  <h3 className="text-xl md:text-2xl font-bold mb-2 text-[#4B3A2F]">{proj.projectName}</h3>
-                  <p className="text-sm md:text-base text-gray-700 mb-4 flex-grow">{proj.description}</p>
+              <div key={proj.projectId} className="px-2">
+                <div className="bg-white p-4 md:p-6 rounded-2xl shadow h-full">
+                  {/* Project Cover Image */}
+                  {getProjectCoverImage(proj.projectId) ? (
+                    <div className="relative">
+                      <img
+                        src={getProjectCoverImage(proj.projectId)}
+                        alt={proj.projectName}
+                        className="w-full h-44 md:h-56 object-cover"
+                      />
+
+                      {/* Optional overlay */}
+                      <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/60 to-transparent p-3">
+                        <h3 className="text-white text-lg md:text-xl font-bold">
+                          {proj.projectName}
+                        </h3>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full h-44 md:h-56 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
+                      No project image
+                    </div>
+                  )}
+                  <p className="text-sm md:text-base text-gray-700 mb-4">{proj.description}</p>
 
                   {/* Project Info */}
                   <div className="grid grid-cols-2 gap-2 md:gap-4 mb-4 md:mb-6 py-3 md:py-4 border-y border-gray-200">
@@ -466,6 +540,26 @@ function Projects() {
                         </div>
                         {newActivityMap[proj.projectId]?.type === "Expense" && (
                           <input type="number" placeholder="Amount" value={newActivityMap[proj.projectId]?.expenses || 0} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], expenses: Number(e.target.value) } }))} className="p-2 border rounded w-full text-xs md:text-sm" />
+                        )}
+                        <label className="text-xs md:text-sm font-semibold text-gray-600">
+                          Upload Activity Image
+                        </label>
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={e =>
+                            handleActivityImageChange(proj.projectId, e.target.files[0])
+                          }
+                          className="p-2 border rounded w-full text-xs md:text-sm"
+                        />
+
+                        {activityImagePreviewMap[proj.projectId] && (
+                          <img
+                            src={activityImagePreviewMap[proj.projectId]}
+                            alt="Activity Preview"
+                            className="mt-2 max-h-32 rounded border"
+                          />
                         )}
                         <button onClick={() => handleAddActivity(proj.projectId)} className="bg-[#FF6404] text-white px-3 md:px-4 py-2 rounded font-semibold hover:bg-[#e55a00] text-xs md:text-sm w-full">
                           Add Activity

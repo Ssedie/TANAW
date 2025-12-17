@@ -93,6 +93,7 @@ function Dashboard() {
     return sum + spent;
   }, 0);
 
+
   const totalBudget = overview?.totalBudget || 0;
   const totalAvailable = totalBudget - totalSpent;
 
@@ -179,11 +180,10 @@ function Dashboard() {
                     <td className="p-2">₱{spent.toLocaleString()}</td>
                     <td className="p-2">{progress}%</td>
                     <td className="p-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        p.projectStatus === "COMPLETED" ? "bg-green-100 text-green-800" :
-                        p.projectStatus === "CANCELLED" ? "bg-red-100 text-red-800" :
-                        "bg-blue-100 text-blue-800"
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${p.projectStatus === "COMPLETED" ? "bg-green-100 text-green-800" :
+                          p.projectStatus === "CANCELLED" ? "bg-red-100 text-red-800" :
+                            "bg-blue-100 text-blue-800"
+                        }`}>
                         {p.projectStatus}
                       </span>
                     </td>
@@ -214,7 +214,22 @@ function Dashboard() {
               <XAxis dataKey="type" />
               <YAxis />
               <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
-              <Bar dataKey="amount">
+              <Bar dataKey="amount"
+                label={({ x, y, width, value }) => {
+                  const percentage = ((value / totalBudget) * 100).toFixed(2);
+                  return (
+                    <text
+                      x={x + width / 2}
+                      y={y - 5}
+                      fill="#333"
+                      textAnchor="middle"
+                      fontSize="12"
+                    >
+                      {percentage}% of total budget
+                    </text>
+                  );
+                }}
+              >
                 {budgetDistribution.map((entry, index) => (
                   <Cell key={index} fill={colors[index % colors.length]} />
                 ))}
@@ -239,7 +254,7 @@ function Dashboard() {
                   <p className="font-semibold">{a.activityName}</p>
                   <p className="text-sm">{a.description}</p>
                   <p className="text-xs text-gray-500">
-                    {new Date(a.date).toLocaleDateString()} 
+                    {new Date(a.date).toLocaleDateString()}
                     {a.type === "Expense" && ` - ₱${Number(a.expenses || 0).toLocaleString()}`}
                   </p>
                 </li>

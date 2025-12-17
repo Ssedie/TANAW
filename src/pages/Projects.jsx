@@ -27,14 +27,15 @@ function Projects() {
   const [projectStatus, setProjectStatus] = useState("ONGOING");
   const [documentFile, setDocumentFile] = useState(null);
   const [documentPreview, setDocumentPreview] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // --- Activities & Feedback ---
   const [activitiesMap, setActivitiesMap] = useState({});
   const [newActivityMap, setNewActivityMap] = useState({});
   // --- Activity Images ---
-  const [activityImageMap, setActivityImageMap] = useState({});
-  const [activityImagePreviewMap, setActivityImagePreviewMap] = useState({});
+
 
   const [feedbacksMap, setFeedbacksMap] = useState({});
   const [feedbackInputMap, setFeedbackInputMap] = useState({});
@@ -157,6 +158,16 @@ function Projects() {
     } else setDocumentPreview(null);
   };
 
+  const handleCoverChange = (e) => {
+    const file = e.target.files[0];
+    setCoverFile(file);
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => setCoverPreview(reader.result);
+      reader.readAsDataURL(file);
+    } else setCoverPreview(null);
+  };
+
   // --- Budget Change ---
   const handleBudgetChange = (e) => {
     const value = Number(e.target.value);
@@ -187,6 +198,7 @@ function Projects() {
     formData.append("projectStatus", projectStatus);
     formData.append("budgetId", selectedBudgetId);
     if (documentFile) formData.append("document", documentFile);
+    if (coverFile) formData.append("coverFile", coverFile);
     formData.append("userId", Number(auth.userId));
 
     try {
@@ -202,6 +214,8 @@ function Projects() {
       setProjectStatus("ONGOING");
       setDocumentFile(null);
       setDocumentPreview(null);
+      setCoverFile(null);
+      setCoverPreview(null);
 
       const budgetHeaders = { Authorization: `Bearer ${auth.token}` };
       axios.get(`${API_URL}/api/projects/budget/${selectedBudgetId}`, { headers: budgetHeaders })
@@ -271,28 +285,6 @@ function Projects() {
     }
   };
 
-  const handleActivityImageChange = (projectId, file) => {
-    setActivityImageMap(prev => ({
-      ...prev,
-      [projectId]: file
-    }));
-
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setActivityImagePreviewMap(prev => ({
-          ...prev,
-          [projectId]: reader.result
-        }));
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setActivityImagePreviewMap(prev => ({
-        ...prev,
-        [projectId]: null
-      }));
-    }
-  };
 
   // --- Add Feedback ---
   const handleAddFeedback = async (projectId) => {
@@ -327,17 +319,16 @@ function Projects() {
     }
   };
 
-  const getProjectCoverImage = (projectId) => {
-    const activities = activitiesMap[projectId] || [];
-    const activityWithImage = activities.find(a => a.imageUrl);
-    return activityWithImage ? `${API_URL}${activityWithImage.imageUrl}` : null;
-  };
-
   // --- Compute Average Rating ---
   const computeAvgRating = (projectId) => {
     const feedbacks = feedbacksMap[projectId] || [];
     if (feedbacks.length === 0) return 0;
     return (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1);
+  };
+
+  const getProjectCoverImage = (proj) => {
+    if (proj.coverPhotoUrl) return `${API_URL}${proj.coverPhotoUrl}`;
+    return null;
   };
 
   // --- Star Rating Component ---
@@ -410,9 +401,10 @@ function Projects() {
               <option value="CANCELLED">CANCELLED</option>
             </select>
 
-            <label className="block mb-1 font-semibold text-sm md:text-base">Upload Document</label>
-            <input type="file" onChange={handleFileChange} className="p-2 md:p-3 border rounded w-full text-sm" />
-            {documentPreview && <img src={documentPreview} alt="Preview" className="max-h-32 md:max-h-40 rounded border mt-2" />}
+            <label className="text-xs md:text-sm font-semibold text-gray-600">Upload Cover Image</label>
+            <input type="file" accept="image/*" onChange={handleCoverChange} className="p-2 border rounded w-full text-xs md:text-sm" required/>
+            {coverPreview && <img src={coverPreview} alt="Cover Preview" className="mt-2 max-h-48 rounded border" />}
+
 
             <button type="submit" disabled={submitting} className="bg-[#FF6404] text-white p-2 md:p-3 rounded font-semibold hover:bg-[#e55a00] disabled:opacity-50 text-sm md:text-base">
               {submitting ? "Adding..." : "Add Project"}
@@ -540,26 +532,6 @@ function Projects() {
                         </div>
                         {newActivityMap[proj.projectId]?.type === "Expense" && (
                           <input type="number" placeholder="Amount" value={newActivityMap[proj.projectId]?.expenses || 0} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], expenses: Number(e.target.value) } }))} className="p-2 border rounded w-full text-xs md:text-sm" />
-                        )}
-                        <label className="text-xs md:text-sm font-semibold text-gray-600">
-                          Upload Activity Image
-                        </label>
-
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={e =>
-                            handleActivityImageChange(proj.projectId, e.target.files[0])
-                          }
-                          className="p-2 border rounded w-full text-xs md:text-sm"
-                        />
-
-                        {activityImagePreviewMap[proj.projectId] && (
-                          <img
-                            src={activityImagePreviewMap[proj.projectId]}
-                            alt="Activity Preview"
-                            className="mt-2 max-h-32 rounded border"
-                          />
                         )}
                         <button onClick={() => handleAddActivity(proj.projectId)} className="bg-[#FF6404] text-white px-3 md:px-4 py-2 rounded font-semibold hover:bg-[#e55a00] text-xs md:text-sm w-full">
                           Add Activity

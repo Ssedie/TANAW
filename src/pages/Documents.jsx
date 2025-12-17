@@ -30,6 +30,31 @@ function Documents() {
     totalItems: totalDocs
   } = usePagination(documents, 7);
 
+  const handleDownload = async (docId, filename) => {
+    try {
+      const res = await axios.get(
+        `${API_URL}/api/documents/${docId}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+          },
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename || "document");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error(err);
+      alert("Download failed");
+    }
+  };
+
   const fetchDocuments = async () => {
     if (!auth?.token) return;
     try {
@@ -37,17 +62,17 @@ function Documents() {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
       setDocuments(res.data);
-      
+
       // Fetch budgets for each document
       res.data.forEach(doc => {
         if (doc.documentType === "Project Plan") {
           axios.get(`${API_URL}/api/documents/${doc.documentId}/budgets`, {
             headers: { Authorization: `Bearer ${auth.token}` },
           })
-          .then(budgetRes => {
-            setBudgetsByDoc(prev => ({ ...prev, [doc.documentId]: budgetRes.data }));
-          })
-          .catch(console.error);
+            .then(budgetRes => {
+              setBudgetsByDoc(prev => ({ ...prev, [doc.documentId]: budgetRes.data }));
+            })
+            .catch(console.error);
         }
       });
     } catch (err) {
@@ -97,27 +122,27 @@ function Documents() {
   // Handle budget creation
   const handleCreateBudget = async (e) => {
     e.preventDefault();
-    
+
     // Validate fiscal year
     const year = parseInt(budgetFiscalYear);
     const currentYear = new Date().getFullYear();
-    
+
     if (isNaN(year)) {
       alert("Please enter a valid fiscal year");
       return;
     }
-    
+
     // Only check for past years if the checkbox is not enabled
     if (!allowPastYears && year < currentYear) {
       alert(`Fiscal year cannot be before the current year (${currentYear}). Check "Allow past years" if you need to enter historical data.`);
       return;
     }
-    
+
     if (year > currentYear + 10) {
       alert("Fiscal year cannot be more than 10 years in the future");
       return;
     }
-    
+
     if (!selectedDocId || !budgetFiscalYear || !budgetAmount) {
       alert("Please fill all required fields");
       return;
@@ -309,12 +334,18 @@ function Documents() {
                       <div className="font-medium text-lg">{doc.documentTitle}</div>
                       <div className="text-sm text-gray-500">{doc.documentType}</div>
                     </div>
-                    <a
-                      href={`${API_URL}/api/documents/${doc.documentId}/download`}
+                    { doc.filePath ?
+                      (<button
+                      onClick={() =>
+                        handleDownload(doc.documentId, doc.documentTitle)
+                      }
                       className="px-3 py-1 bg-[#4B3A2F] text-white rounded text-sm hover:bg-[#3a2c24]"
                     >
                       Download
-                    </a>
+                    </button>) : (
+                      <span className="text-sm text-gray-500">No file available</span>
+                    )}
+                    
                   </div>
 
                   {/* Show budgets for this document if it's a Project Plan */}

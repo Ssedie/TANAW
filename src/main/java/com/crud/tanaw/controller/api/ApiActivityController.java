@@ -57,7 +57,7 @@ public class ApiActivityController {
                 .collect(Collectors.toList());
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping
     public ResponseEntity<?> addActivity(
             @RequestParam("activityName") String activityName,
             @RequestParam("description") String description,
@@ -66,7 +66,6 @@ public class ApiActivityController {
             @RequestParam(value = "expenses", defaultValue = "0") Double expenses,
             @RequestParam("projectId") Integer projectId,
             @RequestParam("type") String type,
-            @RequestParam(value = "image", required = false) MultipartFile image,
             Authentication auth) {
         try {
             if (!SecurityUtil.isAdmin(auth)) {
@@ -76,15 +75,7 @@ public class ApiActivityController {
             Project project = projectRepository.findById(projectId)
                     .orElseThrow(() -> new RuntimeException("Project not found"));
 
-            Integer projectHeadId = project.getUser().getUserId();
-            User user = userRepository.findById(projectHeadId)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            // Handle image upload
-            String imageUrl = null;
-            if (image != null && !image.isEmpty()) {
-                imageUrl = fileStorageService.saveFile(image, "activities");
-            }
+            User user = project.getUser(); // project head
 
             Activity activity = new Activity();
             activity.setActivityName(activityName);
@@ -95,7 +86,6 @@ public class ApiActivityController {
             activity.setProject(project);
             activity.setProjectHead(user);
             activity.setType(type);
-            activity.setImageUrl(imageUrl);
 
             Activity saved = activityRepository.save(activity);
             return ResponseEntity.ok(convertToDTO(saved));
@@ -104,6 +94,7 @@ public class ApiActivityController {
             return ResponseEntity.badRequest().body("Error creating activity: " + e.getMessage());
         }
     }
+
 
     private String saveImage(MultipartFile file) throws IOException {
         // Create upload directory if it doesn't exist

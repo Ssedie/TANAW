@@ -29,6 +29,8 @@ public class ProjectDTO {
     @NotBlank(message = "Please provide some feedback for the project.")
     private String feedback;
 
+    private String coverPhotoUrl;
+
     Integer documentId;
 
     private List<ActivityDTO> activities;
@@ -96,5 +98,13 @@ public class ProjectDTO {
 
     public void setProjectType(String projectType) {
         this.projectType = projectType;
+    }
+
+    public String getCoverPhotoUrl() {
+        return coverPhotoUrl;
+    }
+
+    public void setCoverPhotoUrl(String coverPhotoUrl) {
+        this.coverPhotoUrl = coverPhotoUrl;
     }
 }

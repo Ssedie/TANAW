@@ -30,12 +30,10 @@ public class ActivityDTO {
     @NotBlank(message = "Type must not be empty")
     private String type;
 
-    private String imageUrl;
-
     public ActivityDTO() {}
 
     public ActivityDTO(Integer activityId, String activityName, String description, java.util.Date date,
-                       String status, Double expenses, Integer projectId, String projectName,String type, String imageUrl) {
+                       String status, Double expenses, Integer projectId, String projectName,String type) {
         this.activityId = activityId;
         this.activityName = activityName;
         this.description = description;
@@ -45,7 +43,6 @@ public class ActivityDTO {
         this.projectId = projectId;
         this.projectName = projectName;
         this.type = type;
-        this.imageUrl = imageUrl;
     }
 
     public Integer getActivityId() {
@@ -118,13 +115,5 @@ public class ActivityDTO {
 
     public void setType(String type) {
         this.type = type;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
     }
 }

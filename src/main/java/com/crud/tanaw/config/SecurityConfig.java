@@ -82,6 +82,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/user/reset-password").permitAll()
                         .requestMatchers("/api/user/forgot-password").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/documents/{id}/download").hasAnyAuthority("CITIZEN","ADMIN")
                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2

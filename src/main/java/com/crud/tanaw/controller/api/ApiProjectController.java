@@ -7,13 +7,14 @@ import com.crud.tanaw.dto.ReqRep.FeedbackResponseDTO;
 import com.crud.tanaw.entities.*;
 import com.crud.tanaw.repositories.*;
 import com.crud.tanaw.services.DocumentService;
+import com.crud.tanaw.services.FileStorageService;
 import com.crud.tanaw.utility.SecurityUtil;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,6 +42,9 @@ public class ApiProjectController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @Autowired
     private DocumentRepository documentRepository;
@@ -143,7 +147,7 @@ public class ApiProjectController {
     }
 
     // --- Add new project with optional file upload ---
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> addProject(
             @RequestParam @NotBlank String projectName,
             @RequestParam @NotBlank String description,
@@ -151,6 +155,7 @@ public class ApiProjectController {
             @RequestParam @NotNull Double allocatedBudget,
             @RequestParam @NotBlank String projectStatus,
             @RequestParam(required = false) MultipartFile document,
+            @RequestParam(value = "coverPhoto", required = false) MultipartFile coverPhoto,
             @RequestParam Long userId,
             @RequestParam Long budgetId,
             Authentication auth
@@ -183,6 +188,7 @@ public class ApiProjectController {
                         .body("Allocated budget exceeds remaining budget for FY " + budget.getFiscalYear());
             }
 
+
             Project project = new Project();
             project.setProjectName(projectName);
             project.setDescription(description);
@@ -199,13 +205,18 @@ public class ApiProjectController {
                     Document uploadedDoc = new Document();
                     uploadedDoc.setDocumentTitle(document.getOriginalFilename());
                     uploadedDoc.setDocumentType(document.getContentType());
-                    uploadedDoc.setContent("/uploads/" + UUID.randomUUID() + "_" + document.getOriginalFilename());
+                    uploadedDoc.setFilePath("/uploads/" + UUID.randomUUID() + "_" + document.getOriginalFilename());
                     uploadedDoc.setUploader(user);
                     documentRepository.save(uploadedDoc);
                     System.out.println("Project document uploaded: " + uploadedDoc.getDocumentId());
                 } catch (Exception e) {
                     System.err.println("Warning: Could not save uploaded document: " + e.getMessage());
                 }
+            }
+
+            if (coverPhoto != null && !coverPhoto.isEmpty()) {
+                String coverUrl = fileStorageService.saveFile(coverPhoto, "projects");
+                project.setCoverPhotoUrl(coverUrl);
             }
 
             Project savedProject = projectRepository.save(project);

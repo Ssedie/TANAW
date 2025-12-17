@@ -18,7 +18,7 @@ public class Document {
     private String documentType;
     private String documentTitle;
 
-    private String content;
+    private String filePath;
 
     @Column(nullable = true)
     private Double totalBudget;
@@ -66,12 +66,12 @@ public class Document {
     public User getUploader() { return uploader; }
     public void setUploader(User uploader) { this.uploader = uploader; }
 
-    public String getContent() {
-        return content;
+    public String getFilePath() {
+        return filePath;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 
     public void addBudget(Budget budget) {

@@ -19,7 +19,6 @@ public class Activity {
     private Double expenses;
     private String type;
 
-    private String imageUrl;
 
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -104,13 +103,5 @@ public class Activity {
 
     public void setType(String type) {
         this.type = type;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
     }
 }

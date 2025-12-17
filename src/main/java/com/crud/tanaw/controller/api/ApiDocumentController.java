@@ -7,17 +7,16 @@ import com.crud.tanaw.entities.User;
 import com.crud.tanaw.repositories.BudgetRepository;
 import com.crud.tanaw.repositories.DocumentRepository;
 import com.crud.tanaw.services.DocumentService;
-import com.crud.tanaw.services.FileStorageService;
 import com.crud.tanaw.utility.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,6 +24,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.*;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -157,7 +158,7 @@ public class ApiDocumentController {
         } catch (Exception e) {
             System.err.println("Error creating budget: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.status(BAD_REQUEST)
                     .body("Error creating budget: " + e.getMessage());
         }
     }
@@ -209,17 +210,37 @@ public class ApiDocumentController {
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> downloadDocument(@PathVariable Integer id) throws IOException {
-        Document doc = documentService.getDocument(id);
+    public ResponseEntity<Resource> downloadDocument(@PathVariable Integer id) {
+        // Get the document from DB
+        var document = documentService.getDocument(id);
 
-        Path filePath = Paths.get("uploads", Paths.get(doc.getContent()).getFileName().toString());
-        byte[] fileBytes = Files.readAllBytes(filePath);
+        if (document.getFilePath() == null || document.getFilePath().isEmpty()) {
+            throw new ResponseStatusException(BAD_REQUEST, "No file attached to this document");
+        }
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + doc.getDocumentTitle() + "\"")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(fileBytes);
+        try {
+            // Extract filename from filePath (handles '/uploads/filename' or just 'filename')
+            String fileName = Paths.get(document.getFilePath()).getFileName().toString();
+
+            // Resolve file path on server
+            Path filePath = Paths.get("uploads").resolve(fileName).normalize();
+
+            if (!Files.exists(filePath)) {
+                throw new ResponseStatusException(NOT_FOUND, "File not found on server");
+            }
+
+            Resource resource = new UrlResource(filePath.toUri());
+
+            // Return as downloadable attachment
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + document.getDocumentTitle() + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Error while downloading file", e);
+        }
     }
+
 
     private DocumentDTO toDto(Document doc) {
         DocumentDTO dto = new DocumentDTO();
@@ -227,6 +248,7 @@ public class ApiDocumentController {
         dto.setDocumentTitle(doc.getDocumentTitle());
         dto.setDocumentType(doc.getDocumentType());
         dto.setTotalBudget(doc.getTotalBudget());
+        dto.setFilePath(doc.getFilePath());
         return dto;
     }
 }

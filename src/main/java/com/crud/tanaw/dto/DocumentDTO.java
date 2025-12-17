@@ -18,6 +18,8 @@ public class DocumentDTO {
 
     private Double totalBudget;
 
+    private String filePath;
+
     @NotNull(message = "Please provide the actual date of upload.")
     private Date uploadDate;
 
@@ -59,5 +61,13 @@ public class DocumentDTO {
 
     public void setUploadDate(Date uploadDate) {
         this.uploadDate = uploadDate;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 }

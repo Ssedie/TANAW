@@ -30,6 +30,7 @@ public class Project {
     private Double allocatedBudget;
     private String projectStatus;
     private String feedback;
+    private String coverPhotoUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name= "document_id")
@@ -114,5 +115,13 @@ public class Project {
     }
     public String getFiscalYear() {
         return (this.budget != null) ? this.budget.getFiscalYear() : null;
+    }
+
+    public String getCoverPhotoUrl() {
+        return coverPhotoUrl;
+    }
+
+    public void setCoverPhotoUrl(String coverPhotoUrl) {
+        this.coverPhotoUrl = coverPhotoUrl;
     }
 }

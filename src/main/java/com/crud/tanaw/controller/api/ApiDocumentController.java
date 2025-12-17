@@ -7,8 +7,10 @@ import com.crud.tanaw.entities.User;
 import com.crud.tanaw.repositories.BudgetRepository;
 import com.crud.tanaw.repositories.DocumentRepository;
 import com.crud.tanaw.services.DocumentService;
+import com.crud.tanaw.services.FileStorageService;
 import com.crud.tanaw.utility.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,6 +32,9 @@ public class ApiDocumentController {
 
     private final DocumentService documentService;
     private final DocumentRepository documentRepository;
+
+    @Value("${file.documents-dir:uploads/documents}")
+    private String documentsDir;
 
     @Autowired
     private BudgetRepository budgetRepository;

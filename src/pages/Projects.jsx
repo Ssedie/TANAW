@@ -37,14 +37,18 @@ const [activityErrors, setActivityErrors] = useState({});
   const [projectStatus, setProjectStatus] = useState("ONGOING");
   const [documentFile, setDocumentFile] = useState(null);
   const [documentPreview, setDocumentPreview] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // --- Activities & Feedback ---
   const [activitiesMap, setActivitiesMap] = useState({});
   const [newActivityMap, setNewActivityMap] = useState({});
   // --- Activity Images ---
+
   const [activityImageMap, setActivityImageMap] = useState({});
   const [activityImagePreviewMap, setActivityImagePreviewMap] = useState({});
+
 
   const [feedbacksMap, setFeedbacksMap] = useState({});
   const [feedbackInputMap, setFeedbackInputMap] = useState({});
@@ -177,6 +181,16 @@ const [activityErrors, setActivityErrors] = useState({});
     } else setDocumentPreview(null);
   };
 
+  const handleCoverChange = (e) => {
+    const file = e.target.files[0];
+    setCoverFile(file);
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => setCoverPreview(reader.result);
+      reader.readAsDataURL(file);
+    } else setCoverPreview(null);
+  };
+
   // --- Budget Change ---
   const handleBudgetChange = (e) => {
     const value = Number(e.target.value);
@@ -216,6 +230,7 @@ const handleAddProject = async (e) => {
     formData.append("projectStatus", projectStatus);
     formData.append("budgetId", selectedBudgetId);
     if (documentFile) formData.append("document", documentFile);
+    if (coverFile) formData.append("coverFile", coverFile);
     formData.append("userId", Number(auth.userId));
 
     const headers = { Authorization: `Bearer ${auth.token}`, "Content-Type": "multipart/form-data" };
@@ -223,6 +238,15 @@ const handleAddProject = async (e) => {
 
     setProjects([...projects, res.data]);
 
+      setProjectName("");
+      setDescription("");
+      setAllocatedBudget("");
+      setProjectType("");
+      setProjectStatus("ONGOING");
+      setDocumentFile(null);
+      setDocumentPreview(null);
+      setCoverFile(null);
+      setCoverPreview(null);
     // Reset form
     setProjectName("");
     setDescription("");
@@ -313,28 +337,6 @@ const handleAddActivity = async (projectId) => {
 };
 
 
-  const handleActivityImageChange = (projectId, file) => {
-    setActivityImageMap(prev => ({
-      ...prev,
-      [projectId]: file
-    }));
-
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setActivityImagePreviewMap(prev => ({
-          ...prev,
-          [projectId]: reader.result
-        }));
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setActivityImagePreviewMap(prev => ({
-        ...prev,
-        [projectId]: null
-      }));
-    }
-  };
 
   // --- Add Feedback ---
   const handleAddFeedback = async (projectId) => {
@@ -369,17 +371,16 @@ const handleAddActivity = async (projectId) => {
     }
   };
 
-  const getProjectCoverImage = (projectId) => {
-    const activities = activitiesMap[projectId] || [];
-    const activityWithImage = activities.find(a => a.imageUrl);
-    return activityWithImage ? `${API_URL}${activityWithImage.imageUrl}` : null;
-  };
-
   // --- Compute Average Rating ---
   const computeAvgRating = (projectId) => {
     const feedbacks = feedbacksMap[projectId] || [];
     if (feedbacks.length === 0) return 0;
     return (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1);
+  };
+
+  const getProjectCoverImage = (proj) => {
+    if (proj.coverPhotoUrl) return `${API_URL}${proj.coverPhotoUrl}`;
+    return null;
   };
 
   // --- Star Rating Component ---
@@ -496,9 +497,10 @@ const handleAddActivity = async (projectId) => {
 {errors.submit && <p className="text-red-600 font-semibold mt-2">{errors.submit}</p>}
 
 
-            <label className="block mb-1 font-semibold text-sm md:text-base">Upload Document</label>
-            <input type="file" onChange={handleFileChange} className="p-2 md:p-3 border rounded w-full text-sm" />
-            {documentPreview && <img src={documentPreview} alt="Preview" className="max-h-32 md:max-h-40 rounded border mt-2" />}
+            <label className="text-xs md:text-sm font-semibold text-gray-600">Upload Cover Image</label>
+            <input type="file" accept="image/*" onChange={handleCoverChange} className="p-2 border rounded w-full text-xs md:text-sm" required/>
+            {coverPreview && <img src={coverPreview} alt="Cover Preview" className="mt-2 max-h-48 rounded border" />}
+
 
             <button type="submit" disabled={submitting} className="bg-[#FF6404] text-white p-2 md:p-3 rounded font-semibold hover:bg-[#e55a00] disabled:opacity-50 text-sm md:text-base">
               {submitting ? "Adding..." : "Add Project"}
@@ -615,6 +617,18 @@ const handleAddActivity = async (projectId) => {
 
                       {/* Add Activity Form */}
                       <div className="bg-gray-50 p-3 md:p-4 rounded-lg space-y-2">
+                        <input type="text" placeholder="Activity Name" value={newActivityMap[proj.projectId]?.activityName || ""} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], activityName: e.target.value, type: prev[proj.projectId]?.type || "Report" } }))} className="p-2 border rounded w-full text-xs md:text-sm" />
+                        <textarea placeholder="Description" value={newActivityMap[proj.projectId]?.description || ""} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], description: e.target.value } }))} className="p-2 border rounded w-full text-xs md:text-sm resize-none" rows="2" />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="date" value={newActivityMap[proj.projectId]?.date || new Date().toISOString().split('T')[0]} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], date: e.target.value } }))} className="p-2 border rounded text-xs md:text-sm" />
+                          <select value={newActivityMap[proj.projectId]?.type || "Report"} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], type: e.target.value } }))} className="p-2 border rounded text-xs md:text-sm">
+                            <option value="Report">Report</option>
+                            <option value="Expense">Expense</option>
+                          </select>
+                        </div>
+                        {newActivityMap[proj.projectId]?.type === "Expense" && (
+                          <input type="number" placeholder="Amount" value={newActivityMap[proj.projectId]?.expenses || 0} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], expenses: Number(e.target.value) } }))} className="p-2 border rounded w-full text-xs md:text-sm" />
+                        )}
 <input
   type="text"
   placeholder="Activity Name"

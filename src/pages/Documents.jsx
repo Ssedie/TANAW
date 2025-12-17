@@ -36,6 +36,20 @@ function Documents() {
     totalItems: totalDocs
   } = usePagination(documents, 7);
 
+  useEffect(() => {
+    if (auth?.userId) {
+      if (auth.userId === 100001) {
+        setIsSuperAdmin(true);
+      } else {
+        setIsSuperAdmin(false);
+      }
+    }
+  }, [auth?.userId]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [auth]);
+
   const handleDownload = async (docId, filename) => {
     try {
       const res = await axios.get(
@@ -86,7 +100,6 @@ function Documents() {
     }
   };
 
-  // Clear success messages after 5 seconds
   useEffect(() => {
     if (uploadSuccess) {
       const timer = setTimeout(() => setUploadSuccess(""), 5000);

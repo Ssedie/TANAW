@@ -4,7 +4,7 @@ import { API_URL } from "../config/constants";
 import { useAuth } from "../context/AuthProvider";
 import Card from "../components/Card";
 import SkeletonLoader from "../components/SkeletonLoader";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, Cell, Legend } from "recharts";
 import Pagination, { usePagination } from "../components/Pagination";
 
 function Budget() {
@@ -13,6 +13,7 @@ function Budget() {
   const [overview, setOverview] = useState(null);
   const [budgetSummary, setBudgetSummary] = useState([]);
   const [activitiesMap, setActivitiesMap] = useState({});
+  const [budgetDistribution, setBudgetDistribution] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentFiscalYear, setCurrentFiscalYear] = useState("");
   const [selectedFiscalYear, setSelectedFiscalYear] = useState("");
@@ -50,34 +51,54 @@ function Budget() {
 
     axios.get(`${API_URL}/api/dashboard/fiscal-years/available`, { headers })
       .then(res => {
-        // Sort fiscal years numerically in descending order (newest first)
         const sortedYears = res.data.sort((a, b) => parseInt(b) - parseInt(a));
         setAvailableFiscalYears(sortedYears);
       })
       .catch(console.error);
   }, [auth]);
 
-  // --- Fetch projects and budget summary ---
+  // --- Fetch projects filtered by selected fiscal year ---
   useEffect(() => {
-    if (!auth?.token) return;
+    if (!auth?.token || !selectedFiscalYear) return;
     const headers = { Authorization: `Bearer ${auth.token}` };
     setLoading(true);
 
-    axios.get(`${API_URL}/api/projects`, { headers })
+    // Fetch projects filtered by fiscal year
+    axios.get(`${API_URL}/api/projects`, {
+      headers,
+      params: { fiscalYear: selectedFiscalYear }
+    })
       .then(res => setProjects(res.data))
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [auth, selectedFiscalYear]);
 
-    // Get budget summary for all years
+  // --- Fetch budget distribution by project type ---
+  useEffect(() => {
+    if (!auth?.token || !selectedFiscalYear) return;
+    const headers = { Authorization: `Bearer ${auth.token}` };
+
+    axios.get(`${API_URL}/api/dashboard/budget-distribution`, {
+      headers,
+      params: { fiscalYear: selectedFiscalYear }
+    })
+      .then(res => setBudgetDistribution(res.data))
+      .catch(console.error);
+  }, [auth, selectedFiscalYear]);
+
+  // --- Fetch budget summary for all years ---
+  useEffect(() => {
+    if (!auth?.token) return;
+    const headers = { Authorization: `Bearer ${auth.token}` };
+
     axios.get(`${API_URL}/api/dashboard/budget-summary-all-years`, { headers })
       .then(res => {
-        // Sort budget summary by fiscal year (ascending for chronological display)
         const sortedSummary = res.data.sort((a, b) => 
           parseInt(a.fiscalYear) - parseInt(b.fiscalYear)
         );
         setBudgetSummary(sortedSummary);
       })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .catch(console.error);
   }, [auth]);
 
   // --- Fetch overview when fiscal year changes ---
@@ -112,22 +133,25 @@ function Budget() {
     projectSpentMap[p.projectId] = acts.reduce((sum, a) => sum + Number(a.expenses || 0), 0);
   });
 
-  // --- Budget by status for selected year ---
-  const budgetByStatus = projects.reduce((acc, p) => {
-    const status = p.projectStatus || "UNKNOWN";
-    acc[status] = (acc[status] || 0) + (p.allocatedBudget || 0);
-    return acc;
-  }, {});
-
-  const chartData = Object.entries(budgetByStatus).map(([status, amount]) => ({
-    projectStatus: status,
-    allocatedBudget: amount
-  }));
-
   const totalSpent = Object.values(projectSpentMap).reduce((sum, val) => sum + val, 0);
   const totalBudget = overview?.totalBudget || 0;
   const remaining = totalBudget - totalSpent;
   const spendPercentage = totalBudget > 0 ? ((totalSpent / totalBudget) * 100).toFixed(1) : 0;
+
+  // Colors for different project types
+  const projectTypeColors = {
+    "INFRASTRUCTURE": "#FF6404",
+    "HEALTH & SANITATION": "#4B3A2F",
+    "EDUCATION": "#FFA500",
+    "AGRICULTURAL": "#6B8E23",
+    "SECURITY": "#8B4513",
+    "VAWCII": "#9370DB",
+    "GENERAL": "#00BFFF"
+  };
+
+  const getColorForType = (type) => {
+    return projectTypeColors[type] || "#808080";
+  };
 
   return (
     <div className="p-8 min-h-screen bg-gray-50">
@@ -183,23 +207,28 @@ function Budget() {
         </Card>
       </div>
 
-      {/* Budget by Status Chart */}
+      {/* Budget Distribution by Project Type */}
       <Card className="mb-8 h-80">
-        <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Budget Allocation by Project Status (FY {selectedFiscalYear})</h2>
-        {chartData.length > 0 ? (
+        <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Budget Allocation by Project Type (FY {selectedFiscalYear})</h2>
+        {budgetDistribution.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
+            <BarChart data={budgetDistribution}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="projectStatus" />
+              <XAxis dataKey="projectType" />
               <YAxis />
               <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
-              <Bar dataKey="allocatedBudget" fill="#6B8E23" radius={[6, 6, 0, 0]} />
+              <Legend />
+              <Bar dataKey="totalBudget" name="Allocated Budget" radius={[6, 6, 0, 0]}>
+                {budgetDistribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getColorForType(entry.projectType)} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         ) : loading ? (
           <SkeletonLoader className="h-full" />
         ) : (
-          <p className="text-gray-500">No project data</p>
+          <p className="text-gray-500">No project data for FY {selectedFiscalYear}</p>
         )}
       </Card>
 
@@ -213,6 +242,7 @@ function Budget() {
               <XAxis dataKey="fiscalYear" />
               <YAxis />
               <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
+              <Legend />
               <Line type="monotone" dataKey="totalBudget" stroke="#4B3A2F" strokeWidth={2} name="Total Budget" />
               <Line type="monotone" dataKey="totalSpent" stroke="#FF6404" strokeWidth={2} name="Total Spent" />
               <Line type="monotone" dataKey="remaining" stroke="#2ecc71" strokeWidth={2} name="Remaining" />
@@ -251,7 +281,14 @@ function Budget() {
                 return (
                   <tr key={p.projectId} className="border-b border-gray-200 hover:bg-gray-50">
                     <td className="p-3 font-medium text-[#4B3A2F]">{p.projectName}</td>
-                    <td className="p-3 text-gray-700">{p.projectType}</td>
+                    <td className="p-3">
+                      <span className="px-2 py-1 rounded text-xs font-semibold" style={{ 
+                        backgroundColor: getColorForType(p.projectType) + '20', 
+                        color: getColorForType(p.projectType) 
+                      }}>
+                        {p.projectType || "GENERAL"}
+                      </span>
+                    </td>
                     <td className="p-3 text-gray-700">₱{allocated.toLocaleString()}</td>
                     <td className="p-3 text-[#FF6404] font-semibold">₱{spent.toLocaleString()}</td>
                     <td className={`p-3 font-semibold ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -260,8 +297,11 @@ function Budget() {
                     <td className="p-3">
                       <div className="w-24 bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-[#FF6404] h-2 rounded-full transition-all"
-                          style={{ width: `${Math.min(progress, 100)}%` }}
+                          className="h-2 rounded-full transition-all"
+                          style={{ 
+                            width: `${Math.min(progress, 100)}%`,
+                            backgroundColor: getColorForType(p.projectType)
+                          }}
                         ></div>
                       </div>
                       <span className="text-xs text-gray-600">{progress}%</span>
@@ -281,8 +321,11 @@ function Budget() {
             </tbody>
           </table>
         </div>
-        {projects.length === 0 && (
-          <p className="text-gray-500 text-center py-4">No projects for this fiscal year</p>
+        {projects.length === 0 && !loading && (
+          <p className="text-gray-500 text-center py-4">No projects for fiscal year {selectedFiscalYear}</p>
+        )}
+        {loading && (
+          <SkeletonLoader className="h-32" />
         )}
         <Pagination
           currentPage={projectsPage}

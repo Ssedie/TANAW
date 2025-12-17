@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { API_URL } from "../config/constants";
 import { useAuth } from "../context/AuthProvider";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 import Pagination, { usePagination } from "../components/Pagination";
 
 function Dashboard() {
@@ -13,9 +13,10 @@ function Dashboard() {
   const [selectedFiscalYear, setSelectedFiscalYear] = useState("");
   const [availableFiscalYears, setAvailableFiscalYears] = useState([]);
   const [overview, setOverview] = useState(null);
+  const [budgetDistribution, setBudgetDistribution] = useState([]);
+  const [spendingByType, setSpendingByType] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Pagination hooks
   const {
     currentPage: projectsPage,
     totalPages: projectsTotalPages,
@@ -32,13 +33,12 @@ function Dashboard() {
     totalItems: totalActivities
   } = usePagination(activities, 7);
 
-  // --- Fetch data ---
+  const headers = { Authorization: `Bearer ${auth?.token}` };
+
+  // Fetch current FY and available FYs on mount
   useEffect(() => {
     if (!auth?.token) return;
-    const headers = { Authorization: `Bearer ${auth.token}` };
-    setLoading(true);
 
-    // Get current fiscal year
     axios.get(`${API_URL}/api/dashboard/fiscal-year/current`, { headers })
       .then(res => {
         const year = res.data.currentFiscalYear;
@@ -47,74 +47,86 @@ function Dashboard() {
       })
       .catch(console.error);
 
-    // Get available fiscal years
     axios.get(`${API_URL}/api/dashboard/fiscal-years/available`, { headers })
       .then(res => setAvailableFiscalYears(res.data))
       .catch(console.error);
-
-    // Get projects
-    axios.get(`${API_URL}/api/projects`, { headers })
-      .then(async res => {
-        setProjects(res.data);
-
-        // Fetch activities per project
-        const allActivities = [];
-        for (const proj of res.data) {
-          try {
-            const actRes = await axios.get(`${API_URL}/api/activities/project/${proj.projectId}`, { headers });
-            allActivities.push(...actRes.data);
-          } catch (err) {
-            console.error(err);
-          }
-        }
-
-        allActivities.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setActivities(allActivities);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
   }, [auth]);
 
-  // --- Fetch overview when fiscal year changes ---
+  // Fetch all data when fiscal year changes
   useEffect(() => {
     if (!auth?.token || !selectedFiscalYear) return;
-    const headers = { Authorization: `Bearer ${auth.token}` };
+    
+    fetchDashboardData();
+  }, [auth, selectedFiscalYear]);
 
-    axios.get(`${API_URL}/api/dashboard/overview`, {
-      params: { fiscalYear: selectedFiscalYear },
-      headers
-    })
-      .then(res => setOverview(res.data))
-      .catch(console.error);
-  }, [selectedFiscalYear, auth]);
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      // Fetch overview
+      const overviewRes = await axios.get(`${API_URL}/api/dashboard/overview`, {
+        headers,
+        params: { fiscalYear: selectedFiscalYear }
+      });
+      setOverview(overviewRes.data);
 
-  const totalSpent = projects.reduce((sum, p) => {
-    const spent = (p.activities || []).reduce((aSum, a) => aSum + Number(a.expenses || 0), 0);
-    return sum + spent;
-  }, 0);
+      // Fetch projects for fiscal year
+      const projectsRes = await axios.get(`${API_URL}/api/projects`, {
+        headers,
+        params: { fiscalYear: selectedFiscalYear }
+      });
+      setProjects(projectsRes.data);
 
+      // Fetch activities for fiscal year
+      const activitiesRes = await axios.get(`${API_URL}/api/dashboard/activities`, {
+        headers,
+        params: { fiscalYear: selectedFiscalYear }
+      });
+      setActivities(activitiesRes.data);
+
+      // Fetch budget distribution by PROJECT TYPE for fiscal year
+      const distributionRes = await axios.get(`${API_URL}/api/dashboard/budget-distribution`, {
+        headers,
+        params: { fiscalYear: selectedFiscalYear }
+      });
+      setBudgetDistribution(distributionRes.data);
+
+      // Fetch spending by project type
+      const spendingRes = await axios.get(`${API_URL}/api/dashboard/budget-distribution-detailed`, {
+        headers,
+        params: { fiscalYear: selectedFiscalYear }
+      });
+      setSpendingByType(spendingRes.data);
+
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const totalBudget = overview?.totalBudget || 0;
+  const totalSpent = overview?.totalSpent || 0;
   const totalAvailable = totalBudget - totalSpent;
+  const activeProjects = overview?.activeProjects || 0;
 
-  const activeProjects = projects.filter(p => p.projectStatus === "ONGOING");
+  // Colors for different project types
+  const projectTypeColors = {
+    "INFRASTRUCTURE": "#FF6404",
+    "HEALTH & SANITATION": "#4B3A2F",
+    "EDUCATION": "#FFA500",
+    "AGRICULTURAL": "#6B8E23",
+    "SECURITY": "#8B4513",
+    "VAWCII": "#9370DB",
+    "GENERAL": "#00BFFF"
+  };
 
-  // Budget distribution
-  const budgetDistribution = [];
-  const typeMap = {};
-  projects.forEach(p => {
-    const type = p.projectType || "General";
-    if (!typeMap[type]) typeMap[type] = 0;
-    typeMap[type] += Number(p.allocatedBudget || 0);
-  });
-  for (const type in typeMap) {
-    budgetDistribution.push({ type, amount: typeMap[type] });
-  }
-
-  const colors = ["#FF6404", "#4B3A2F", "#FFA500", "#8B4513", "#00BFFF"];
+  const getColorForType = (type) => {
+    return projectTypeColors[type] || "#808080";
+  };
 
   return (
     <div className="p-8 min-h-screen bg-gray-50">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-4xl font-bold text-[#4B3A2F]">Dashboard</h1>
         <div className="flex gap-4 items-center">
@@ -139,23 +151,125 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Budget Overview */}
+      {/* Budget Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-2">Total Budget (FY {selectedFiscalYear})</h2>
-          <p className="text-2xl font-bold">₱{Number(totalBudget).toLocaleString()}</p>
+          <p className="text-2xl font-bold">₱{totalBudget.toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-2">Total Spent</h2>
-          <p className="text-2xl font-bold">₱{totalSpent.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-[#FF6404]">₱{totalSpent.toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-2">Total Available</h2>
-          <p className="text-2xl font-bold">₱{totalAvailable.toLocaleString()}</p>
+          <p className={`text-2xl font-bold ${totalAvailable >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            ₱{totalAvailable.toLocaleString()}
+          </p>
         </div>
       </div>
 
-      {/* Project Status Table with Pagination */}
+      {/* Budget Distribution by Project Type */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-6">
+        <h2 className="text-2xl font-semibold mb-4">Budget Distribution by Project Type (FY {selectedFiscalYear})</h2>
+        {budgetDistribution.length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={budgetDistribution} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+              <XAxis dataKey="projectType" />
+              <YAxis />
+              <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
+              <Legend />
+              <Bar dataKey="totalBudget" name="Allocated Budget"
+                label={({ x, y, width, value }) => {
+                  const percentage = ((value / totalBudget) * 100).toFixed(1);
+                  return (
+                    <text x={x + width / 2} y={y - 5} fill="#333" textAnchor="middle" fontSize="12">
+                      {percentage}%
+                    </text>
+                  );
+                }}
+              >
+                {budgetDistribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getColorForType(entry.projectType)} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : loading ? (
+          <p className="text-gray-500 text-center">Loading...</p>
+        ) : (
+          <p className="text-gray-500 text-center">No budget distribution data for FY {selectedFiscalYear}</p>
+        )}
+      </div>
+
+      {/* Spending by Project Type */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-6">
+        <h2 className="text-2xl font-semibold mb-4">Spending Analysis by Project Type (FY {selectedFiscalYear})</h2>
+        {spendingByType.length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={spendingByType} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+              <XAxis dataKey="projectType" />
+              <YAxis />
+              <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
+              <Legend />
+              <Bar dataKey="totalAllocated" name="Allocated" fill="#4B3A2F" />
+              <Bar dataKey="totalSpent" name="Spent" fill="#FF6404" />
+              <Bar dataKey="remaining" name="Remaining" fill="#6B8E23" />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : loading ? (
+          <p className="text-gray-500 text-center">Loading...</p>
+        ) : (
+          <p className="text-gray-500 text-center">No spending data for FY {selectedFiscalYear}</p>
+        )}
+      </div>
+
+      {/* Spending Summary Table by Type */}
+      {spendingByType.length > 0 && (
+        <div className="bg-white p-6 rounded-2xl shadow mb-6">
+          <h2 className="text-2xl font-semibold mb-4">Budget Utilization by Type</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="border-b">
+                  <th className="p-2">Project Type</th>
+                  <th className="p-2">Allocated</th>
+                  <th className="p-2">Spent</th>
+                  <th className="p-2">Remaining</th>
+                  <th className="p-2">Utilization %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {spendingByType.map((type, index) => (
+                  <tr key={index} className="border-b hover:bg-gray-50">
+                    <td className="p-2 font-semibold" style={{ color: getColorForType(type.projectType) }}>
+                      {type.projectType}
+                    </td>
+                    <td className="p-2">₱{Number(type.totalAllocated).toLocaleString()}</td>
+                    <td className="p-2 text-[#FF6404] font-semibold">₱{Number(type.totalSpent).toLocaleString()}</td>
+                    <td className={`p-2 font-semibold ${type.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ₱{Number(type.remaining).toLocaleString()}
+                    </td>
+                    <td className="p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-[#FF6404] h-2 rounded-full transition-all"
+                            style={{ width: `${Math.min(type.utilizationPercentage, 100)}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm">{Number(type.utilizationPercentage).toFixed(1)}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Project Status Table */}
       <div className="bg-white p-6 rounded-2xl shadow mb-6">
         <h2 className="text-2xl font-semibold mb-4">Project Status</h2>
         <div className="overflow-x-auto">
@@ -163,6 +277,7 @@ function Dashboard() {
             <thead>
               <tr className="border-b">
                 <th className="p-2">Project Name</th>
+                <th className="p-2">Type</th>
                 <th className="p-2">Allocated Budget</th>
                 <th className="p-2">Spent</th>
                 <th className="p-2">Progress</th>
@@ -176,14 +291,23 @@ function Dashboard() {
                 return (
                   <tr key={p.projectId} className="border-b hover:bg-gray-50">
                     <td className="p-2">{p.projectName}</td>
-                    <td className="p-2">₱{Number(p.allocatedBudget).toLocaleString()}</td>
+                    <td className="p-2">
+                      <span className="px-2 py-1 rounded text-xs font-semibold" style={{ 
+                        backgroundColor: getColorForType(p.projectType) + '20', 
+                        color: getColorForType(p.projectType) 
+                      }}>
+                        {p.projectType || "GENERAL"}
+                      </span>
+                    </td>
+                    <td className="p-2">₱{Number(p.allocatedBudget || 0).toLocaleString()}</td>
                     <td className="p-2">₱{spent.toLocaleString()}</td>
                     <td className="p-2">{progress}%</td>
                     <td className="p-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${p.projectStatus === "COMPLETED" ? "bg-green-100 text-green-800" :
-                          p.projectStatus === "CANCELLED" ? "bg-red-100 text-red-800" :
-                            "bg-blue-100 text-blue-800"
-                        }`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        p.projectStatus === "COMPLETED" ? "bg-green-100 text-green-800" :
+                        p.projectStatus === "CANCELLED" ? "bg-red-100 text-red-800" :
+                        "bg-blue-100 text-blue-800"
+                      }`}>
                         {p.projectStatus}
                       </span>
                     </td>
@@ -193,8 +317,11 @@ function Dashboard() {
             </tbody>
           </table>
         </div>
-        {projects.length === 0 && (
-          <p className="text-gray-500 text-center py-4">No projects available</p>
+        {projects.length === 0 && !loading && (
+          <p className="text-gray-500 text-center py-4">No projects available for FY {selectedFiscalYear}</p>
+        )}
+        {loading && (
+          <p className="text-gray-500 text-center py-4">Loading...</p>
         )}
         <Pagination
           currentPage={projectsPage}
@@ -205,58 +332,39 @@ function Dashboard() {
         />
       </div>
 
-      {/* Budget Distribution */}
+      {/* Recent Activities */}
       <div className="bg-white p-6 rounded-2xl shadow mb-6">
-        <h2 className="text-2xl font-semibold mb-4">Budget Distribution by Type</h2>
-        {budgetDistribution.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={budgetDistribution} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-              <XAxis dataKey="type" />
-              <YAxis />
-              <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
-              <Bar dataKey="amount"
-                label={({ x, y, width, value }) => {
-                  const percentage = ((value / totalBudget) * 100).toFixed(2);
-                  return (
-                    <text
-                      x={x + width / 2}
-                      y={y - 5}
-                      fill="#333"
-                      textAnchor="middle"
-                      fontSize="12"
-                    >
-                      {percentage}% of total budget
-                    </text>
-                  );
-                }}
-              >
-                {budgetDistribution.map((entry, index) => (
-                  <Cell key={index} fill={colors[index % colors.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="text-gray-500">No project data available</p>
-        )}
-      </div>
-
-      {/* Recent Activities with Pagination */}
-      <div className="bg-white p-6 rounded-2xl shadow mb-6">
-        <h2 className="text-2xl font-semibold mb-4">Recent Activities</h2>
+        <h2 className="text-2xl font-semibold mb-4">Recent Activities (FY {selectedFiscalYear})</h2>
         {activities.length === 0 ? (
-          <p>No recent activities.</p>
+          <p className="text-gray-500">No recent activities for FY {selectedFiscalYear}</p>
         ) : (
           <>
             <ul className="space-y-2">
               {currentActivities.map(a => (
                 <li key={a.activityId} className="border-b p-2 hover:bg-gray-50">
-                  <p className="font-semibold">{a.activityName}</p>
-                  <p className="text-sm">{a.description}</p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(a.date).toLocaleDateString()}
-                    {a.type === "Expense" && ` - ₱${Number(a.expenses || 0).toLocaleString()}`}
-                  </p>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold">{a.activityName}</p>
+                      <p className="text-sm text-gray-600">{a.description}</p>
+                      <p className="text-xs text-gray-500">
+                        Project: {a.projectName} 
+                        {a.projectType && (
+                          <span className="ml-2 px-2 py-0.5 rounded text-xs" style={{ 
+                            backgroundColor: getColorForType(a.projectType) + '20', 
+                            color: getColorForType(a.projectType) 
+                          }}>
+                            {a.projectType}
+                          </span>
+                        )}
+                        {' | '} {new Date(a.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {a.expenses && (
+                      <span className="text-sm font-semibold text-[#FF6404]">
+                        ₱{Number(a.expenses).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -271,10 +379,10 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Active Projects */}
+      {/* Active Projects Count */}
       <div className="bg-white p-6 rounded-2xl shadow">
-        <h2 className="text-2xl font-semibold mb-4">Active Projects</h2>
-        <p className="text-xl font-bold">{activeProjects.length}</p>
+        <h2 className="text-2xl font-semibold mb-4">Active Projects (FY {selectedFiscalYear})</h2>
+        <p className="text-4xl font-bold text-[#4B3A2F]">{activeProjects}</p>
       </div>
     </div>
   );

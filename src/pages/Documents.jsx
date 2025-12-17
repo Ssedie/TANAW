@@ -218,7 +218,7 @@ function Documents() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
+    <div className="p-6 min-h-screen ">
       <h1 className="text-3xl font-bold text-[#4B3A2F] mb-6">Documents</h1>
 
       {/* Superadmin Notice */}

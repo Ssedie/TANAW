@@ -8,6 +8,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { AlertCircle } from "lucide-react";
 
+
 function Projects() {
   const { auth } = useAuth();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
@@ -474,6 +475,7 @@ const handleAddActivity = async (projectId) => {
   onChange={handleBudgetChange}
   className="p-2 md:p-3 border rounded text-sm md:text-base"
   max={availableBudget}
+  
 />
 {errors.allocatedBudget && <p className="text-red-500 text-xs mt-1">{errors.allocatedBudget}</p>}
 

@@ -2,7 +2,9 @@ package com.crud.tanaw.services;
 
 import com.crud.tanaw.dto.dashboardDTO.ProjectStatusDTO;
 import com.crud.tanaw.entities.Project;
+import com.crud.tanaw.repositories.DashboardRepository;
 import com.crud.tanaw.repositories.ProjectRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,29 +12,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class DashboardService {
 
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private DashboardRepository dashboardRepository;
+
     /**
      * Get project status list for all projects
      */
     public List<ProjectStatusDTO> getProjectStatusList() {
-        List<Project> projects = projectRepository.findAll();
-        return projects.stream()
-                .map(this::convertToProjectStatusDTO)
-                .collect(Collectors.toList());
+        return dashboardRepository.findAllProjectStatus();
     }
 
     /**
      * Get project status list filtered by fiscal year
      */
     public List<ProjectStatusDTO> getProjectStatusListByFiscalYear(String fiscalYear) {
-        List<Project> projects = projectRepository.findByFiscalYear(fiscalYear);
-        return projects.stream()
-                .map(this::convertToProjectStatusDTO)
-                .collect(Collectors.toList());
+        return dashboardRepository.findAllProjectStatusByFiscalYear(fiscalYear);
     }
 
     /**

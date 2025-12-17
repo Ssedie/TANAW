@@ -7,54 +7,41 @@ import com.crud.tanaw.entities.User;
 import com.crud.tanaw.repositories.ActivityRepository;
 import com.crud.tanaw.repositories.ProjectRepository;
 import com.crud.tanaw.repositories.UserRepository;
-import com.crud.tanaw.services.FileStorageService;
+import com.crud.tanaw.services.ActivityService;
 import com.crud.tanaw.utility.SecurityUtil;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/activities")
+@RequiredArgsConstructor
 public class ApiActivityController {
 
-    private final ActivityRepository activityRepository;
+    private final ActivityService activityService;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
-    private final FileStorageService fileStorageService;
+    private final ActivityRepository activityRepository;
     private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 
-    @Value("${file.upload-dir:uploads/activities}")
-    private String uploadDir;
+    @GetMapping
+    public ResponseEntity<List<Activity>> getAllActivities() {
+        return ResponseEntity.ok(activityService.getAllActivities());
+    }
 
-    public ApiActivityController(ActivityRepository activityRepository,
-                                 ProjectRepository projectRepository,
-                                 UserRepository userRepository,
-                                 FileStorageService fileStorageService) {
-        this.activityRepository = activityRepository;
-        this.projectRepository = projectRepository;
-        this.userRepository = userRepository;
-        this.fileStorageService = fileStorageService;
+    @GetMapping("/{id}")
+    public ResponseEntity<Activity> getActivityById(@PathVariable Integer id) {
+        return ResponseEntity.ok(activityService.getActivityById(id));
     }
 
     @GetMapping("/project/{projectId}")
-    public List<ActivityDTO> getActivitiesByProject(@PathVariable Integer projectId) {
-        return activityRepository.findByProjectProjectId(projectId)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public ResponseEntity<List<Activity>> getActivitiesByProject(@PathVariable Integer projectId) {
+        return ResponseEntity.ok(activityService.getActivitiesByProject(projectId));
     }
 
     @PostMapping
@@ -66,8 +53,9 @@ public class ApiActivityController {
             @RequestParam(value = "expenses", defaultValue = "0") Double expenses,
             @RequestParam("projectId") Integer projectId,
             @RequestParam("type") String type,
-            Authentication auth) {
-        try {
+            Authentication auth)
+    {
+        try{
             if (!SecurityUtil.isAdmin(auth)) {
                 return ResponseEntity.status(403).body("Only admins can create activities.");
             }
@@ -86,7 +74,6 @@ public class ApiActivityController {
             activity.setProject(project);
             activity.setProjectHead(user);
             activity.setType(type);
-
             Activity saved = activityRepository.save(activity);
             return ResponseEntity.ok(convertToDTO(saved));
         } catch (Exception e) {
@@ -95,27 +82,42 @@ public class ApiActivityController {
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateActivity(
+            @PathVariable Integer id,
+            @RequestBody Activity activity
+    ) {
+        try {
+            Activity existing = activityService.getActivityById(id);
 
-    private String saveImage(MultipartFile file) throws IOException {
-        // Create upload directory if it doesn't exist
-        Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
+            // Update fields
+            if (activity.getActivityName() != null) {
+                existing.setActivityName(activity.getActivityName());
+            }
+            if (activity.getDescription() != null) {
+                existing.setDescription(activity.getDescription());
+            }
+            if (activity.getDate() != null) {
+                existing.setDate(activity.getDate());
+            }
+            if (activity.getStatus() != null) {
+                existing.setStatus(activity.getStatus());
+            }
+            if (activity.getExpenses() != null) {
+                existing.setExpenses(activity.getExpenses());
+            }
+            if (activity.getType() != null) {
+                existing.setType(activity.getType());
+            }
+
+            // Save and automatically update budget expenses
+            Activity updated = activityService.saveActivity(existing);
+
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Failed to update activity: " + e.getMessage()));
         }
-
-        // Generate unique filename
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = originalFilename != null && originalFilename.contains(".")
-                ? originalFilename.substring(originalFilename.lastIndexOf("."))
-                : "";
-        String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
-
-        // Save file
-        Path filePath = uploadPath.resolve(uniqueFilename);
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-        // Return URL path (relative to your static resources)
-        return "/uploads/activities/" + uniqueFilename;
     }
 
     private ActivityDTO convertToDTO(Activity a) {
@@ -129,9 +131,20 @@ public class ApiActivityController {
         dto.setExpenses(a.getExpenses());
         dto.setProjectId(a.getProject().getProjectId());
         dto.setProjectName(a.getProject().getProjectName());
-        dto.setType(a.getType());
-        dto.setImageUrl(a.getImageUrl()); // Make sure this is included!
+        dto.setType(a.getType());// Make sure this is included!
 
         return dto;
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteActivity(@PathVariable Integer id) {
+        try {
+            // Delete activity and automatically update budget expenses
+            activityService.deleteActivity(id);
+            return ResponseEntity.ok(Map.of("message", "Activity deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Failed to delete activity: " + e.getMessage()));
+        }
     }
 }

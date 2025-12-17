@@ -4,6 +4,7 @@ import com.crud.tanaw.dto.dashboardDTO.BudgetDistributionDTO;
 import com.crud.tanaw.entities.Budget;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,6 +21,24 @@ public interface BudgetRepository extends JpaRepository<Budget, Integer> {
 
     @Query("SELECT COALESCE(SUM(b.totalExpenses), 0) FROM Budget b")
     Double sumTotalExpenses();
+
+    // Find all budgets for a specific fiscal year
+    List<Budget> findByFiscalYear(String fiscalYear);
+
+    // Find budgets by document ID
+    List<Budget> findByDocument_DocumentId(Integer documentId);
+
+    // Get total budget for a fiscal year
+    @Query("SELECT COALESCE(SUM(b.totalBudget), 0) FROM Budget b WHERE b.fiscalYear = :fiscalYear")
+    Double sumTotalBudgetByFiscalYear(@Param("fiscalYear") String fiscalYear);
+
+    // Get total expenses for a fiscal year
+    @Query("SELECT COALESCE(SUM(b.totalExpenses), 0) FROM Budget b WHERE b.fiscalYear = :fiscalYear")
+    Double sumTotalExpensesByFiscalYear(@Param("fiscalYear") String fiscalYear);
+
+    // Get all distinct fiscal years
+    @Query("SELECT DISTINCT b.fiscalYear FROM Budget b ORDER BY b.fiscalYear DESC")
+    List<String> findAllDistinctFiscalYears();
 
     // Group budgets by document.documentType (used as 'sector' here)
     @Query("""

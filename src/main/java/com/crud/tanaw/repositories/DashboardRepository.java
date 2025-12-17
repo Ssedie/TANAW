@@ -8,6 +8,7 @@ import com.crud.tanaw.entities.Project;
 import com.crud.tanaw.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,25 +21,42 @@ public interface DashboardRepository extends JpaRepository<Project, Integer> {
             "FROM User u GROUP BY u.accountStatus")
     List<UsersByStatusDTO> countUsersByStatus();
 
-    // --- Sum approved budget ---
-    @Query("SELECT COALESCE(SUM(b.totalBudget), 0) FROM Budget b")
-    Double sumApprovedBudget();
+    // --- Sum approved budget by fiscal year (from Budget entity) ---
+    @Query("SELECT COALESCE(SUM(b.totalBudget), 0) FROM Budget b WHERE b.fiscalYear = :fiscalYear")
+    Double sumApprovedBudgetByFiscalYear(@Param("fiscalYear") String fiscalYear);
 
-    // --- Sum total expenses ---
-    @Query("SELECT COALESCE(SUM(b.totalExpenses), 0) FROM Budget b")
-    Double sumTotalExpenses();
+    // --- Sum total ACTUAL expenses by fiscal year (from Activity expenses, not Budget.totalExpenses) ---
+    @Query("SELECT COALESCE(SUM(a.expenses), 0) FROM Activity a " +
+            "JOIN a.project p WHERE p.budget.fiscalYear = :fiscalYear")
+    Double sumTotalExpensesByFiscalYear(@Param("fiscalYear") String fiscalYear);
 
-    @Query("SELECT COALESCE(SUM(b.totalBudget), 0) FROM Budget b WHERE b.fiscalYear = ?1")
-    Double sumApprovedBudgetByFiscalYear(String fiscalYear);
-
-    @Query("SELECT COALESCE(SUM(b.totalExpenses), 0) FROM Budget b WHERE b.fiscalYear = ?1")
-    Double sumTotalExpensesByFiscalYear(String fiscalYear);
+    @Query("SELECT COALESCE(SUM(a.expenses), 0) FROM Activity a " +
+            "JOIN a.project p WHERE p.budget.fiscalYear = :fiscalYear")
+    Double sumTotalActivityExpensesByFiscalYear(@Param("fiscalYear") String fiscalYear);
 
     @Query("SELECT d.documentType as documentType, SUM(b.totalBudget) as totalBudget FROM Budget b JOIN b.document d WHERE b.fiscalYear = ?1 GROUP BY d.documentType")
     List<Object[]> findBudgetDistributionByDocumentTypeAndFiscalYear(String fiscalYear);
 
+    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.BudgetDistributionDTO(" +
+            "b.document.documentType, CAST(SUM(COALESCE(b.totalBudget,0)) AS DOUBLE)) " +
+            "FROM Budget b WHERE b.fiscalYear = :fiscalYear " +
+            "GROUP BY b.document.documentType")
+    List<BudgetDistributionDTO> findBudgetDistributionByDocumentTypeForYear(@Param("fiscalYear") String fiscalYear);
+
+
     @Query("SELECT DISTINCT b.fiscalYear FROM Budget b ORDER BY b.fiscalYear DESC")
     List<String> findDistinctFiscalYears();
+
+    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.ProjectStatusDTO(" +
+            "p.projectId, " +
+            "p.projectName, " +
+            "COALESCE(p.allocatedBudget, 0), " +
+            "(SELECT COALESCE(SUM(a.expenses), 0) FROM Activity a WHERE a.project.projectId = p.projectId), " +
+            "p.projectStatus, " +
+            "p.endDate) " +
+            "FROM Project p WHERE p.budget.fiscalYear = :fiscalYear")
+    List<ProjectStatusDTO> findAllProjectStatusByFiscalYear(@Param("fiscalYear") String fiscalYear);
+
 
     // --- Budget distribution by document type / sector ---
     @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.BudgetDistributionDTO(" +
@@ -57,6 +75,21 @@ public interface DashboardRepository extends JpaRepository<Project, Integer> {
             "p.endDate) " +
             "FROM Project p")
     List<ProjectStatusDTO> findAllProjectStatus();
+
+    // Count feedbacks by fiscal year
+    @Query("SELECT COUNT(f) FROM Feedback f JOIN f.project p WHERE p.budget.fiscalYear = :fiscalYear")
+    Long countFeedbacksByFiscalYear(@Param("fiscalYear") String fiscalYear);
+
+    // Get feedback summary by fiscal year
+    @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.FeedbackSummaryDTO(p.projectId, p.projectName, COUNT(f)) " +
+            "FROM Project p LEFT JOIN Feedback f ON f.project.projectId = p.projectId " +
+            "WHERE p.budget.fiscalYear = :fiscalYear GROUP BY p.projectId, p.projectName")
+    List<FeedbackSummaryDTO> findFeedbackSummaryByFiscalYear(@Param("fiscalYear") String fiscalYear);
+
+    // Get recent activities by fiscal year
+    @Query("SELECT new com.crud.tanaw.dto.ActivityDTO(a.activityId, a.activityName, a.description, a.date,a.status, a.expenses, a.project.projectId, a.project.projectName,a.type) " +
+            "FROM Activity a JOIN a.project p WHERE p.budget.fiscalYear = :fiscalYear ORDER BY a.date DESC")
+    List<ActivityDTO> findRecentActivitiesByFiscalYear(@Param("fiscalYear") String fiscalYear);
 
     // --- Feedback summary per project ---
     @Query("SELECT new com.crud.tanaw.dto.dashboardDTO.FeedbackSummaryDTO(" +
@@ -82,5 +115,13 @@ public interface DashboardRepository extends JpaRepository<Project, Integer> {
             "LEFT JOIN a.project p " +
             "ORDER BY a.date DESC")
     List<ActivityDTO> findRecentActivities();
+
+    @Query("SELECT b.fiscalYear as fiscalYear, " +
+            "COALESCE(SUM(b.totalBudget), 0) as totalBudget, " +
+            "(SELECT COALESCE(SUM(a.expenses), 0) FROM Activity a JOIN a.project p WHERE p.budget.fiscalYear = b.fiscalYear) as totalSpent " +
+            "FROM Budget b " +
+            "GROUP BY b.fiscalYear " +
+            "ORDER BY b.fiscalYear ASC")
+    List<Object[]> findBudgetSummaryAllYearsRaw();
 
 }

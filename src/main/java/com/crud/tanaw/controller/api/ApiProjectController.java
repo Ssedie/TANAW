@@ -6,11 +6,11 @@ import com.crud.tanaw.dto.ReqRep.FeedbackRequest;
 import com.crud.tanaw.dto.ReqRep.FeedbackResponseDTO;
 import com.crud.tanaw.entities.*;
 import com.crud.tanaw.repositories.*;
-import com.crud.tanaw.services.DocumentService;
 import com.crud.tanaw.services.FileStorageService;
 import com.crud.tanaw.utility.SecurityUtil;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,135 +18,90 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.validation.constraints.NotBlank;
-
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/projects")
+@RequiredArgsConstructor
 public class ApiProjectController {
 
-    @Autowired
-    private DocumentService documentService;
+    private final ProjectRepository projectRepository;
+    private final BudgetRepository budgetRepository;
+    private final DocumentRepository documentRepository;
+    private final UserRepository userRepository;
+    private final FeedbackRepository feedbackRepository;
+    private final FileStorageService fileStorageService;
 
-    @Autowired
-    private ProjectRepository projectRepository;
-
-    @Autowired
-    private FeedbackRepository feedbackRepository;
-
-    @Autowired
-    private BudgetRepository budgetRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private FileStorageService fileStorageService;
-
-    @Autowired
-    private DocumentRepository documentRepository;
-
-    // --- NEW ENDPOINT: Get available budget for a document/plan ---
-    @GetMapping("/budget/{budgetId}")
-    public ResponseEntity<Map<String, Object>> getAvailableBudget(
-            @PathVariable Integer budgetId
-    ) {
-        try {
-            System.out.println("=== Available Budget Endpoint ===");
-            System.out.println("Budget ID: " + budgetId);
-
-            // Fetch the budget
-            Budget budget = budgetRepository.findById(budgetId)
-                    .orElseThrow(() -> new RuntimeException("Budget not found"));
-
-            System.out.println("Fiscal Year: " + budget.getFiscalYear());
-            System.out.println("Total Budget: " + budget.getTotalBudget());
-
-            // Check if total budget is set
-            if (budget.getTotalBudget() == null || budget.getTotalBudget() == 0) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "This budget does not have a total amount set"));
-            }
-
-            // Calculate used budget from all projects linked to this budget
-            Double usedBudgetQuery = projectRepository.sumAllocatedBudgetByBudgetId(budgetId);
-            double usedBudget = (usedBudgetQuery != null) ? usedBudgetQuery : 0;
-
-            System.out.println("Used Budget: " + usedBudget);
-
-            double availableBudget = budget.getTotalBudget() - usedBudget;
-            System.out.println("Available Budget: " + availableBudget);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("budgetId", budgetId);
-            response.put("fiscalYear", budget.getFiscalYear());
-            response.put("totalBudget", budget.getTotalBudget());
-            response.put("usedBudget", usedBudget);
-            response.put("availableBudget", Math.max(availableBudget, 0));
-
-            return ResponseEntity.ok(response);
-
-        } catch (RuntimeException e) {
-            System.err.println("RuntimeException: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            System.err.println("Exception: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Server error: " + e.getMessage()));
-        }
-    }
-
-    // --- Get current fiscal year and available years ---
+    /**
+     * Get current fiscal year
+     */
     @GetMapping("/fiscal-year/current")
-    public ResponseEntity<Map<String, Object>> getCurrentFiscalYear() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("currentFiscalYear", java.time.Year.now().toString());
+    public ResponseEntity<Map<String, String>> getCurrentFiscalYear() {
+        int currentYear = LocalDate.now().getYear();
+        String fiscalYear = String.valueOf(currentYear);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("currentFiscalYear", fiscalYear);
         return ResponseEntity.ok(response);
     }
 
-    // --- Get budgets for a document ---
-    @GetMapping("/budgets/document/{documentId}")
-    public ResponseEntity<List<Map<String, Object>>> getBudgetsByDocument(
-            @PathVariable Integer documentId
-    ) {
-        List<Budget> budgets = budgetRepository.findByDocumentId(documentId);
-        List<Map<String, Object>> response = new ArrayList<>();
-
-        for (Budget budget : budgets) {
-            Double usedBudget = projectRepository.sumAllocatedBudgetByBudgetId(budget.getBudgetId());
-            usedBudget = (usedBudget != null) ? usedBudget : 0;
-            double available = (budget.getTotalBudget() != null) ? budget.getTotalBudget() - usedBudget : 0;
-
-            Map<String, Object> budgetInfo = new HashMap<>();
-            budgetInfo.put("budgetId", budget.getBudgetId());
-            budgetInfo.put("fiscalYear", budget.getFiscalYear());
-            budgetInfo.put("totalBudget", budget.getTotalBudget());
-            budgetInfo.put("usedBudget", usedBudget);
-            budgetInfo.put("availableBudget", Math.max(available, 0));
-
-            response.add(budgetInfo);
-        }
-
-        return ResponseEntity.ok(response);
-    }
-
-    // --- List all projects ---
+    /**
+     * Get all projects, PROPERLY filtered by fiscal year
+     */
     @GetMapping
-    public ResponseEntity<List<ProjectDTO>> getProjects() {
-        List<ProjectDTO> projects = projectRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(projects);
+    public ResponseEntity<List<Project>> getAllProjects(
+            @RequestParam(required = false) String fiscalYear
+    ) {
+        if (fiscalYear != null && !fiscalYear.isEmpty()) {
+            // Filter by fiscal year through Budget relationship
+            return ResponseEntity.ok(projectRepository.findByBudget_FiscalYear(fiscalYear));
+        }
+        return ResponseEntity.ok(projectRepository.findAll());
     }
 
-    // --- Add new project with optional file upload ---
+    /**
+     * Get project by ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<Project> getProjectById(@PathVariable Integer id) {
+        return projectRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Get projects by budget ID
+     */
+    @GetMapping("/budget/{budgetId}")
+    public ResponseEntity<Map<String, Object>> getProjectsByBudget(@PathVariable Integer budgetId) {
+        Budget budget = budgetRepository.findById(budgetId)
+                .orElseThrow(() -> new RuntimeException("Budget not found"));
+
+        List<Project> projects = projectRepository.findByBudgetId(budgetId);
+
+        // Calculate available budget
+        Double totalAllocated = projects.stream()
+                .mapToDouble(p -> p.getAllocatedBudget() != null ? p.getAllocatedBudget() : 0)
+                .sum();
+
+        Double availableBudget = budget.getTotalBudget() - totalAllocated;
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("projects", projects);
+        response.put("availableBudget", availableBudget);
+        response.put("totalBudget", budget.getTotalBudget());
+        response.put("totalAllocated", totalAllocated);
+        response.put("fiscalYear", budget.getFiscalYear());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Create a new project - ENSURES fiscal year is set from budget
+     */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> addProject(
             @RequestParam @NotBlank String projectName,
@@ -250,7 +205,6 @@ public class ApiProjectController {
         );
     }
 
-
     @PostMapping("/{projectId}/feedbacks")
     public ResponseEntity<?> addFeedback(
             @PathVariable Integer projectId,
@@ -277,6 +231,15 @@ public class ApiProjectController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(convertToDTO(feedbackRepository.save(feedback)));
     }
+
+    /**
+     * Get projects by user
+     */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Project>> getProjectsByUser(@PathVariable Integer userId) {
+        return ResponseEntity.ok(projectRepository.findByUserUserId(userId));
+    }
+
 
     private FeedbackResponseDTO convertToDTO(Feedback f) {
         FeedbackResponseDTO dto = new FeedbackResponseDTO();

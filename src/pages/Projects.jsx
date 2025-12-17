@@ -6,9 +6,18 @@ import { useAuth } from "../context/AuthProvider";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { AlertCircle } from "lucide-react";
 
 function Projects() {
   const { auth } = useAuth();
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  // --- Form Validation Errors ---
+const [errors, setErrors] = useState({});
+// --- Activity Validation Errors ---
+const [activityErrors, setActivityErrors] = useState({});
+
+
 
   // --- State ---
   const [projects, setProjects] = useState([]);
@@ -41,6 +50,16 @@ function Projects() {
   const [feedbackInputMap, setFeedbackInputMap] = useState({});
   const [ratingInputMap, setRatingInputMap] = useState({});
   const [expandedFeedback, setExpandedFeedback] = useState({});
+
+  useEffect(() => {
+    if (auth?.userId) {
+      if (auth.userId === 100001) {
+        setIsSuperAdmin(true);
+      } else {
+        setIsSuperAdmin(false);
+      }
+    }
+  }, [auth?.userId]);
 
   // --- Fetch Projects, Budgets & Fiscal Year ---
   useEffect(() => {
@@ -179,17 +198,26 @@ function Projects() {
   };
 
   // --- Add Project ---
-  const handleAddProject = async (e) => {
-    e.preventDefault();
-    if (!projectName || !description || !allocatedBudget || !selectedBudgetId) {
-      alert("Fill all required fields!");
-      return;
-    }
-    if (Number(allocatedBudget) > availableBudget) {
-      alert("Allocated budget exceeds available budget!");
-      return;
-    }
+const handleAddProject = async (e) => {
+  e.preventDefault();
 
+  // Clear previous errors
+  const newErrors = {};
+
+  if (!selectedBudgetId) newErrors.selectedBudgetId = "Budget is required";
+  if (!projectName.trim()) newErrors.projectName = "Project name is required";
+  if (!description.trim()) newErrors.description = "Description is required";
+  if (!allocatedBudget || allocatedBudget <= 0) newErrors.allocatedBudget = "Allocated budget must be greater than 0";
+  if (allocatedBudget > availableBudget) newErrors.allocatedBudget = "Allocated budget exceeds available budget";
+  if (!projectType) newErrors.projectType = "Project type is required";
+
+  setErrors(newErrors);
+
+  if (Object.keys(newErrors).length > 0) return;
+
+  // Submit Form
+  try {
+    setSubmitting(true);
     const formData = new FormData();
     formData.append("projectName", projectName);
     formData.append("description", description);
@@ -201,11 +229,10 @@ function Projects() {
     if (coverFile) formData.append("coverFile", coverFile);
     formData.append("userId", Number(auth.userId));
 
-    try {
-      setSubmitting(true);
-      const headers = { Authorization: `Bearer ${auth.token}`, "Content-Type": "multipart/form-data" };
-      const res = await axios.post(`${API_URL}/api/projects`, formData, { headers });
-      setProjects([...projects, res.data]);
+    const headers = { Authorization: `Bearer ${auth.token}`, "Content-Type": "multipart/form-data" };
+    const res = await axios.post(`${API_URL}/api/projects`, formData, { headers });
+
+    setProjects([...projects, res.data]);
 
       setProjectName("");
       setDescription("");
@@ -216,31 +243,54 @@ function Projects() {
       setDocumentPreview(null);
       setCoverFile(null);
       setCoverPreview(null);
+    // Reset form
+    setProjectName("");
+    setDescription("");
+    setAllocatedBudget(0);
+    setProjectType("");
+    setProjectStatus("ONGOING");
+    setDocumentFile(null);
+    setDocumentPreview(null);
+    setSelectedBudgetId(null);
+    setErrors({});
 
-      const budgetHeaders = { Authorization: `Bearer ${auth.token}` };
-      axios.get(`${API_URL}/api/projects/budget/${selectedBudgetId}`, { headers: budgetHeaders })
-        .then(res => setAvailableBudget(res.data.availableBudget))
-        .catch(console.error);
+    // Refresh available budget
+    const budgetHeaders = { Authorization: `Bearer ${auth.token}` };
+    const budgetRes = await axios.get(`${API_URL}/api/projects/budget/${selectedBudgetId}`, { headers: budgetHeaders });
+    setAvailableBudget(budgetRes.data.availableBudget);
 
-      alert("Project added successfully!");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to add project");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  } catch (err) {
+    console.error(err);
+    setErrors({ submit: "Failed to add project. Please try again." });
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   // --- Add Activity ---
-  const handleAddActivity = async (projectId) => {
-    const activity = newActivityMap[projectId];
-    const activityImage = activityImageMap[projectId];
+const handleAddActivity = async (projectId) => {
+  const activity = newActivityMap[projectId];
+  const activityImage = activityImageMap[projectId];
 
-    if (!activity || !activity.activityName || !activity.type) {
-      alert("Please fill all required fields");
-      return;
-    }
+  const newErrors = {};
 
+  if (!activity || !activity.activityName?.trim()) {
+    newErrors.activityName = "Activity name is required";
+  }
+  if (!activity?.type) {
+    newErrors.type = "Activity type is required";
+  }
+  if (activity.type === "Expense" && (!activity.expenses || activity.expenses <= 0)) {
+    newErrors.expenses = "Amount must be greater than 0";
+  }
+
+  setActivityErrors(prev => ({ ...prev, [projectId]: newErrors }));
+
+  if (Object.keys(newErrors).length > 0) return;
+
+  // Submit activity
+  try {
     const formData = new FormData();
     formData.append("activityName", activity.activityName);
     formData.append("description", activity.description || "");
@@ -256,34 +306,32 @@ function Projects() {
       formData.append("image", activityImage);
     }
 
-    try {
-      const headers = {
-        Authorization: `Bearer ${auth.token}`,
-        "Content-Type": "multipart/form-data"
-      };
-      const res = await axios.post(`${API_URL}/api/activities`, formData, { headers });
+    const headers = {
+      Authorization: `Bearer ${auth.token}`,
+      "Content-Type": "multipart/form-data"
+    };
+    const res = await axios.post(`${API_URL}/api/activities`, formData, { headers });
 
-      // Update activities list
-      setActivitiesMap(prev => ({
-        ...prev,
-        [projectId]: [...(prev[projectId] || []), res.data]
-      }));
+    // Update activities list
+    setActivitiesMap(prev => ({
+      ...prev,
+      [projectId]: [...(prev[projectId] || []), res.data]
+    }));
 
-      setNewActivityMap(prev => ({
-        ...prev,
-        [projectId]: { activityName: "", description: "", date: new Date().toISOString().split('T')[0], expenses: 0, type: "Report" }
-      }));
+    // Reset form
+    setNewActivityMap(prev => ({
+      ...prev,
+      [projectId]: { activityName: "", description: "", date: new Date().toISOString().split('T')[0], expenses: 0, type: "Report" }
+    }));
+    setActivityImageMap(prev => ({ ...prev, [projectId]: null }));
+    setActivityImagePreviewMap(prev => ({ ...prev, [projectId]: null }));
+    setActivityErrors(prev => ({ ...prev, [projectId]: {} }));
+  } catch (err) {
+    console.error(err);
+    setActivityErrors(prev => ({ ...prev, [projectId]: { submit: "Failed to add activity. Try again." } }));
+  }
+};
 
-      setActivityImageMap(prev => ({ ...prev, [projectId]: null }));
-      setActivityImagePreviewMap(prev => ({ ...prev, [projectId]: null }));
-
-      // Reset form
-      // ... rest of your code
-    } catch (err) {
-      console.error(err);
-      alert("Failed to add activity");
-    }
-  };
 
 
   // --- Add Feedback ---
@@ -370,36 +418,79 @@ function Projects() {
         )}
       </div>
 
+      {/* Superadmin Notice */}
+      {isSuperAdmin && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-8 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-amber-900 font-semibold">⚠️ Superadmin Account</p>
+            <p className="text-amber-800 text-sm mt-1">Project creation and activity management are disabled for security reasons.</p>
+          </div>
+        </div>
+      )}
+
       {/* Add Project Form */}
-      {auth.role === "ADMIN" && (
+      {auth.role === "ADMIN" && !isSuperAdmin && (
         <div className="bg-white p-4 md:p-6 rounded-2xl shadow mb-8 w-full">
           <h2 className="text-xl md:text-2xl font-semibold mb-4">Add New Project</h2>
           <form onSubmit={handleAddProject} className="grid grid-cols-1 gap-4">
-            <select value={selectedBudgetId || ""} onChange={e => setSelectedBudgetId(e.target.value ? parseInt(e.target.value) : null)} className="p-2 md:p-3 border rounded text-sm md:text-base" required>
-              <option value="" disabled>Select a Budget (Fiscal Year)</option>
-              {budgets.map(budget => (
-                <option key={budget.budgetId} value={budget.budgetId}>
-                  FY {budget.fiscalYear} - ₱{(budget.totalBudget ?? 0).toLocaleString()}
-                </option>
-              ))}
-            </select>
+<select
+  value={selectedBudgetId || ""}
+  onChange={e => setSelectedBudgetId(e.target.value ? parseInt(e.target.value) : null)}
+  className="p-2 md:p-3 border rounded text-sm md:text-base"
+>
+  <option value="" disabled>Select a Budget (Fiscal Year)</option>
+  {budgets.map(budget => (
+    <option key={budget.budgetId} value={budget.budgetId}>
+      FY {budget.fiscalYear} - ₱{(budget.totalBudget ?? 0).toLocaleString()}
+    </option>
+  ))}
+</select>
+{errors.selectedBudgetId && <p className="text-red-500 text-xs mt-1">{errors.selectedBudgetId}</p>}
 
-            <input type="text" placeholder="Project Name" value={projectName} onChange={e => setProjectName(e.target.value)} className="p-2 md:p-3 border rounded text-sm md:text-base" required />
-            <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} className="p-2 md:p-3 border rounded text-sm md:text-base" required />
-            <select value={projectType || ""} onChange={e => setProjectType(e.target.value)} className="p-2 md:p-3 border rounded text-sm md:text-base" required>
-              <option value="" disabled>Select Project Type</option>
-              <option value="INFRASTRUCTURE">Infrastructure</option>
-              <option value="HEALTH">Health</option>
-              <option value="EDUCATION">Education</option>
-              <option value="ENVIRONMENT">Environment</option>
-              <option value="GENERAL">General</option>
-            </select>
-            <input type="number" placeholder="Allocated Budget" value={allocatedBudget} onChange={handleBudgetChange} className="p-2 md:p-3 border rounded text-sm md:text-base" max={availableBudget} required />
-            <select value={projectStatus} onChange={e => setProjectStatus(e.target.value)} className="p-2 md:p-3 border rounded text-sm md:text-base">
-              <option value="ONGOING">ONGOING</option>
-              <option value="COMPLETED">COMPLETED</option>
-              <option value="CANCELLED">CANCELLED</option>
-            </select>
+<input
+  type="text"
+  placeholder="Project Name"
+  value={projectName}
+  onChange={e => setProjectName(e.target.value)}
+  className="p-2 md:p-3 border rounded text-sm md:text-base"
+/>
+{errors.projectName && <p className="text-red-500 text-xs mt-1">{errors.projectName}</p>}
+
+<textarea
+  placeholder="Description"
+  value={description}
+  onChange={e => setDescription(e.target.value)}
+  className="p-2 md:p-3 border rounded text-sm md:text-base"
+/>
+{errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
+
+<input
+  type="number"
+  placeholder="Allocated Budget"
+  value={allocatedBudget}
+  onChange={handleBudgetChange}
+  className="p-2 md:p-3 border rounded text-sm md:text-base"
+  max={availableBudget}
+/>
+{errors.allocatedBudget && <p className="text-red-500 text-xs mt-1">{errors.allocatedBudget}</p>}
+
+<select
+  value={projectType || ""}
+  onChange={e => setProjectType(e.target.value)}
+  className="p-2 md:p-3 border rounded text-sm md:text-base"
+>
+  <option value="" disabled>Select Project Type</option>
+  <option value="INFRASTRUCTURE">Infrastructure</option>
+  <option value="HEALTH">Health</option>
+  <option value="EDUCATION">Education</option>
+  <option value="ENVIRONMENT">Environment</option>
+  <option value="GENERAL">General</option>
+</select>
+{errors.projectType && <p className="text-red-500 text-xs mt-1">{errors.projectType}</p>}
+
+{errors.submit && <p className="text-red-600 font-semibold mt-2">{errors.submit}</p>}
+
 
             <label className="text-xs md:text-sm font-semibold text-gray-600">Upload Cover Image</label>
             <input type="file" accept="image/*" onChange={handleCoverChange} className="p-2 border rounded w-full text-xs md:text-sm" required/>
@@ -499,7 +590,7 @@ function Projects() {
                   </div>
 
                   {/* Admin Activities Section */}
-                  {auth.role === "ADMIN" && (
+                  {auth.role === "ADMIN" && !isSuperAdmin && (
                     <div className="mb-4 md:mb-6 border-t pt-4 md:pt-6">
                       <h4 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Activities</h4>
                       <div className="max-h-40 md:max-h-48 overflow-y-auto mb-3 md:mb-4 bg-gray-50 rounded p-3">
@@ -532,6 +623,65 @@ function Projects() {
                         </div>
                         {newActivityMap[proj.projectId]?.type === "Expense" && (
                           <input type="number" placeholder="Amount" value={newActivityMap[proj.projectId]?.expenses || 0} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], expenses: Number(e.target.value) } }))} className="p-2 border rounded w-full text-xs md:text-sm" />
+                        )}
+<input
+  type="text"
+  placeholder="Activity Name"
+  value={newActivityMap[proj.projectId]?.activityName || ""}
+  onChange={e => setNewActivityMap(prev => ({ 
+    ...prev, 
+    [proj.projectId]: { ...prev[proj.projectId], activityName: e.target.value } 
+  }))}
+  className="p-2 border rounded w-full text-xs md:text-sm"
+/>
+{activityErrors[proj.projectId]?.activityName && (
+  <p className="text-red-500 text-xs mt-1">{activityErrors[proj.projectId].activityName}</p>
+)}
+
+<select
+  value={newActivityMap[proj.projectId]?.type || "Report"}
+  onChange={e => setNewActivityMap(prev => ({ 
+    ...prev, 
+    [proj.projectId]: { ...prev[proj.projectId], type: e.target.value } 
+  }))}
+  className="p-2 border rounded text-xs md:text-sm"
+>
+  <option value="Report">Report</option>
+  <option value="Expense">Expense</option>
+</select>
+{activityErrors[proj.projectId]?.type && (
+  <p className="text-red-500 text-xs mt-1">{activityErrors[proj.projectId].type}</p>
+)}
+
+{newActivityMap[proj.projectId]?.type === "Expense" && (
+  <>
+    <input
+      type="number"
+      placeholder="Amount"
+      value={newActivityMap[proj.projectId]?.expenses || 0}
+      onChange={e => setNewActivityMap(prev => ({
+        ...prev,
+        [proj.projectId]: { ...prev[proj.projectId], expenses: Number(e.target.value) }
+      }))}
+      className="p-2 border rounded w-full text-xs md:text-sm"
+    />
+    {activityErrors[proj.projectId]?.expenses && (
+      <p className="text-red-500 text-xs mt-1">{activityErrors[proj.projectId].expenses}</p>
+    )}
+  </>
+)}
+
+{activityErrors[proj.projectId]?.submit && (
+  <p className="text-red-600 font-semibold mt-2">{activityErrors[proj.projectId].submit}</p>
+)}
+
+
+                        {activityImagePreviewMap[proj.projectId] && (
+                          <img
+                            src={activityImagePreviewMap[proj.projectId]}
+                            alt="Activity Preview"
+                            className="mt-2 max-h-32 rounded border"
+                          />
                         )}
                         <button onClick={() => handleAddActivity(proj.projectId)} className="bg-[#FF6404] text-white px-3 md:px-4 py-2 rounded font-semibold hover:bg-[#e55a00] text-xs md:text-sm w-full">
                           Add Activity

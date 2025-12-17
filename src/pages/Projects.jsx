@@ -13,6 +13,7 @@ import "swiper/css/pagination";
 
 import { AlertCircle } from "lucide-react";
 
+
 function Projects() {
   const { auth } = useAuth();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);

@@ -50,6 +50,19 @@ function Documents() {
     fetchDocuments();
   }, [auth]);
 
+    useEffect(() => {
+    if (auth?.userId) {
+      if (auth.userId === 100001) {
+        setIsSuperAdmin(true);
+      } else {
+        setIsSuperAdmin(false);
+      }
+    }
+  }, [auth?.userId]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [auth]);
   const handleDownload = async (docId, filename) => {
     try {
       const res = await axios.get(
@@ -209,6 +222,7 @@ function Documents() {
   const handleCreateBudget = async (e) => {
     e.preventDefault();
 
+    if (!validateBudget()) return;
     // Validate fiscal year
     const year = parseInt(budgetFiscalYear);
     const currentYear = new Date().getFullYear();
@@ -266,7 +280,7 @@ function Documents() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
+    <div className="p-6 min-h-screen ">
       <h1 className="text-3xl font-bold text-[#4B3A2F] mb-6">Documents</h1>
 
       {/* Superadmin Notice */}

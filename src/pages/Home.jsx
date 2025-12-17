@@ -101,7 +101,7 @@ const Home = () => {
               </div>
 
               <div className="p-6">
-                <h3 className="text-xl font-bold text-[#5C7D92] mb-3">
+                <h3 className="text-xl font-bold text-[#5C7D92] mb-3 text-center">
                   {feature.title}
                 </h3>
                 <p className="text-gray-600 text-sm">{feature.description}</p>

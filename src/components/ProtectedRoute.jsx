@@ -13,3 +13,5 @@ export default function ProtectedRoute({ children }) {
   // User is authenticated, render children
   return children;
 }
+
+

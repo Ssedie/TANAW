@@ -98,7 +98,7 @@ const TermsOfService = () => {
           </p>
           <div className="p-4 bg-gray-50 rounded border-l-4 border-[#FF6404]">
             <p className="text-gray-700"><strong>Email:</strong> support@tanaw.gov.ph</p>
-            <p className="text-gray-700"><strong>Address:</strong> Barangay Taboc, Calasiao, Ilocos Sur</p>
+            <p className="text-gray-700"><strong>Address:</strong> Barangay Taboc, San Juan, La Union</p>
             <p className="text-gray-700"><strong>Phone:</strong> +63 (912) 345-6789</p>
           </div>
         </section>

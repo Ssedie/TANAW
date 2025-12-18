@@ -22,6 +22,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import Unauthorized from "./pages/Unauthorized";
+
 
 const App = () => {
   const [sidebarToggle, setSidebarToggle] = useState(true);
@@ -99,6 +101,21 @@ const App = () => {
             </motion.div>
           }
         />
+        <Route
+  path="/unauthorized"
+  element={
+    <motion.div
+      variants={pageTransition}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{ duration: 0.3 }}
+    >
+      <Unauthorized />
+    </motion.div>
+  }
+/>
+
 
         {/* Protected Routes */}
         <Route
@@ -171,15 +188,18 @@ const App = () => {
               </>
             }
           />
-          <Route
-            path="/adminDashboard"
-            element={
-              <>
-                <AdminDashboard />
-                <Footer />
-              </>
-            }
-          />
+<Route
+  path="/adminDashboard"
+  element={
+    <ProtectedRoute allowedRoles={["ADMIN"]}>
+      <>
+        <AdminDashboard />
+        <Footer />
+      </>
+    </ProtectedRoute>
+  }
+/>
+
           <Route path="/logout" element={<Logout />} />
         </Route>
       </Routes>

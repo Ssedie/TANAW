@@ -50,7 +50,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-[#FF6404] flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-400">Barangay Taboc, Calasiao, Ilocos Sur</span>
+                <span className="text-sm text-gray-400">Barangay Taboc, San Juan, La Union </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={18} className="text-[#FF6404] flex-shrink-0" />

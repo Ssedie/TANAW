@@ -19,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -211,7 +213,6 @@ public class ApiDocumentController {
 
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadDocument(@PathVariable Integer id) {
-        // Get the document from DB
         var document = documentService.getDocument(id);
 
         if (document.getFilePath() == null || document.getFilePath().isEmpty()) {
@@ -219,11 +220,8 @@ public class ApiDocumentController {
         }
 
         try {
-            // Extract filename from filePath (handles '/uploads/filename' or just 'filename')
-            String fileName = Paths.get(document.getFilePath()).getFileName().toString();
-
-            // Resolve file path on server
-            Path filePath = Paths.get("uploads").resolve(fileName).normalize();
+            String storedFileName = Paths.get(document.getFilePath()).getFileName().toString();
+            Path filePath = Paths.get("uploads").resolve(storedFileName).normalize();
 
             if (!Files.exists(filePath)) {
                 throw new ResponseStatusException(NOT_FOUND, "File not found on server");
@@ -231,14 +229,51 @@ public class ApiDocumentController {
 
             Resource resource = new UrlResource(filePath.toUri());
 
-            // Return as downloadable attachment
+            // Extract extension
+            String extension = "";
+            int lastDotIndex = storedFileName.lastIndexOf('.');
+            if (lastDotIndex > 0) {
+                extension = storedFileName.substring(lastDotIndex);
+            }
+
+            // Use stored filename directly instead of document title
+            String downloadFileName = storedFileName;
+
+            String contentType = getContentTypeFromExtension(extension);
+
+            // Debug logging
+            System.out.println("Extension: " + extension);
+            System.out.println("Content-Type: " + contentType);
+            System.out.println("Download filename: " + downloadFileName);
+
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + document.getDocumentTitle() + "\"")
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadFileName + "\"")
                     .body(resource);
 
         } catch (Exception e) {
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Error while downloading file", e);
         }
+    }
+
+    private String getContentTypeFromExtension(String extension) {
+        return switch (extension.toLowerCase()) {
+            case ".pdf" -> "application/pdf";
+            case ".doc" -> "application/msword";
+            case ".docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            case ".xls" -> "application/vnd.ms-excel";
+            case ".xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            case ".ppt" -> "application/vnd.ms-powerpoint";
+            case ".pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            case ".txt" -> "text/plain";
+            case ".csv" -> "text/csv";
+            case ".jpg", ".jpeg" -> "image/jpeg";
+            case ".png" -> "image/png";
+            case ".gif" -> "image/gif";
+            case ".zip" -> "application/zip";
+            case ".rar" -> "application/x-rar-compressed";
+            default -> "application/octet-stream";
+        };
     }
 
 

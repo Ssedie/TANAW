@@ -269,6 +269,7 @@ public class ApiProjectController {
         dto.setAllocatedBudget(p.getAllocatedBudget());
         dto.setProjectStatus(p.getProjectStatus());
         dto.setFeedback(p.getFeedback());
+        dto.setCoverPhotoUrl(p.getCoverPhotoUrl());
         dto.setDocumentId(p.getDocument() != null ? p.getDocument().getDocumentId() : null);
 
         // --- NEW: map activities ---

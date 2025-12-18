@@ -31,11 +31,20 @@ public class SecurityConfig {
         this.customUserDetailsService = customUserDetailsService;
     }
 
+    /**
+     *
+     * @return
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     *
+     * @param passwordEncoder
+     * @return
+     */
     @Bean
     public AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -44,6 +53,10 @@ public class SecurityConfig {
         return new ProviderManager(authProvider);
     }
 
+    /**
+     *
+     * @return
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -57,6 +70,10 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     *
+     * @return
+     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
@@ -68,6 +85,12 @@ public class SecurityConfig {
         return jwtAuthenticationConverter;
     }
 
+    /**
+     *
+     * @param http
+     * @return
+     * @throws Exception
+     */
     @Bean
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -92,6 +115,12 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     *
+     * @param http
+     * @return
+     * @throws Exception
+     */
     @Bean
     @Order(2)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {

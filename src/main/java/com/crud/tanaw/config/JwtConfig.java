@@ -19,18 +19,32 @@ public class JwtConfig {
     @Value("${jwt.secret-key}")
     private String jwtSecretKey;
 
+    /**
+     *
+     * @return
+     */
     @Bean
     public SecretKey secretKey() {
         // Use HMAC SHA-256 key
         return new SecretKeySpec(jwtSecretKey.getBytes(), "HmacSHA256");
     }
 
+    /**
+     *
+     * @param secretKey
+     * @return
+     */
     @Bean
     public JwtEncoder jwtEncoder(SecretKey secretKey) {
         // ImmutableSecret wraps the key into a valid JWK source
         return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
     }
 
+    /**
+     *
+     * @param secretKey
+     * @return
+     */
     @Bean
     public JwtDecoder jwtDecoder(SecretKey secretKey) {
         return NimbusJwtDecoder.withSecretKey(secretKey)

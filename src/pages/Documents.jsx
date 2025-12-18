@@ -64,29 +64,46 @@ function Documents() {
     fetchDocuments();
   }, [auth]);
   const handleDownload = async (docId, filename) => {
-    try {
-      const res = await axios.get(
-        `${API_URL}/api/documents/${docId}/download`,
-        {
-          headers: {
-            Authorization: `Bearer ${auth.token}`,
-          },
-          responseType: "blob",
-        }
-      );
+  try {
+    const res = await axios.get(
+      `${API_URL}/api/documents/${docId}/download`,
+      {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+        },
+        responseType: "blob",
+      }
+    );
 
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename || "document");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error(err);
-      alert("Download failed");
+    // Get the content type from the response header
+    const contentType = res.headers['content-type'];
+   
+    // Get the filename from Content-Disposition header
+    const contentDisposition = res.headers['content-disposition'];
+    let downloadFilename = filename || "document";
+   
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (filenameMatch && filenameMatch[1]) {
+        downloadFilename = filenameMatch[1];
+      }
     }
-  };
+
+    // Create blob with the correct content type
+    const blob = new Blob([res.data], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", downloadFilename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url); // Clean up
+  } catch (err) {
+    console.error(err);
+    alert("Download failed");
+  }
+};
 
   const fetchDocuments = async () => {
     if (!auth?.token) return;

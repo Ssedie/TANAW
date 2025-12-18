@@ -207,24 +207,26 @@ function Budget() {
         </Card>
       </div>
 
-      {/* Budget Distribution by Project Type */}
-      <Card className="mb-8 h-80">
+      {/* Budget Distribution by Project Type - FIXED */}
+      <Card className="mb-8">
         <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Budget Allocation by Project Type (FY {selectedFiscalYear})</h2>
         {budgetDistribution.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={budgetDistribution}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="projectType" />
-              <YAxis />
-              <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
-              <Legend />
-              <Bar dataKey="totalBudget" name="Allocated Budget" radius={[6, 6, 0, 0]}>
-                {budgetDistribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={getColorForType(entry.projectType)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ width: '100%', height: '300px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={budgetDistribution}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="projectType" />
+                <YAxis />
+                <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
+                <Legend />
+                <Bar dataKey="totalBudget" name="Allocated Budget" radius={[6, 6, 0, 0]}>
+                  {budgetDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={getColorForType(entry.projectType)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         ) : loading ? (
           <SkeletonLoader className="h-full" />
         ) : (
@@ -232,22 +234,24 @@ function Budget() {
         )}
       </Card>
 
-      {/* Budget Trend across all years */}
-      <Card className="mb-8 h-80">
+      {/* Budget Trend across all years - FIXED */}
+      <Card className="mb-8">
         <h2 className="text-xl font-semibold mb-4 text-[#4B3A2F]">Budget Trend Across Years</h2>
         {budgetSummary.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={budgetSummary}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="fiscalYear" />
-              <YAxis />
-              <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
-              <Legend />
-              <Line type="monotone" dataKey="totalBudget" stroke="#4B3A2F" strokeWidth={2} name="Total Budget" />
-              <Line type="monotone" dataKey="totalSpent" stroke="#FF6404" strokeWidth={2} name="Total Spent" />
-              <Line type="monotone" dataKey="remaining" stroke="#2ecc71" strokeWidth={2} name="Remaining" />
-            </LineChart>
-          </ResponsiveContainer>
+          <div style={{ width: '100%', height: '300px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={budgetSummary}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="fiscalYear" />
+                <YAxis />
+                <Tooltip formatter={value => `₱${value.toLocaleString()}`} />
+                <Legend />
+                <Line type="monotone" dataKey="totalBudget" stroke="#4B3A2F" strokeWidth={2} name="Total Budget" />
+                <Line type="monotone" dataKey="totalSpent" stroke="#FF6404" strokeWidth={2} name="Total Spent" />
+                <Line type="monotone" dataKey="remaining" stroke="#2ecc71" strokeWidth={2} name="Remaining" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         ) : loading ? (
           <SkeletonLoader className="h-full" />
         ) : (

@@ -12,6 +12,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 import { AlertCircle } from "lucide-react";
+import { div } from "framer-motion/client";
 
 
 function Projects() {
@@ -49,6 +50,8 @@ function Projects() {
   const [feedbackInputMap, setFeedbackInputMap] = useState({});
   const [ratingInputMap, setRatingInputMap] = useState({});
   const [expandedFeedback, setExpandedFeedback] = useState({});
+  const [successMessage, setSuccessMessage] =  useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (auth?.userId) {
@@ -105,7 +108,18 @@ function Projects() {
         for (const doc of docsRes.data) {
           const budgetsRes = await axios.get(`${API_URL}/api/documents/${doc.documentId}/budgets`, { headers });
           const yearBudgets = budgetsRes.data.filter(b => b.fiscalYear === selectedFiscalYear);
-          allBudgets.push(...yearBudgets);
+          
+          // Attach the full document info to each budget
+          const budgetsWithDocInfo = yearBudgets.map(budget => ({
+            ...budget,
+            document: {
+              documentId: doc.documentId,
+              documentTitle: doc.documentTitle,
+              documentType: doc.documentType
+            }
+          }));
+          
+          allBudgets.push(...budgetsWithDocInfo);
         }
 
         console.log(`Found ${allBudgets.length} budgets for FY ${selectedFiscalYear}`);
@@ -205,7 +219,10 @@ function Projects() {
   const handleBudgetChange = (e) => {
     const value = Number(e.target.value);
     if (value > availableBudget) {
-      alert("Allocated budget exceeds available budget!");
+      setErrors(prev => ({
+        ...prev,
+        allocatedBudget: "Allocated budget exceeds available budget."
+      }));
       return;
     }
     setAllocatedBudget(value);
@@ -222,6 +239,7 @@ function Projects() {
     if (!allocatedBudget || allocatedBudget <= 0) newErrors.allocatedBudget = "Allocated budget must be greater than 0";
     if (allocatedBudget > availableBudget) newErrors.allocatedBudget = "Allocated budget exceeds available budget";
     if (!projectType) newErrors.projectType = "Project type is required";
+    if (!coverFile) newErrors.coverFile = "Cover image is required";
 
     setErrors(newErrors);
 
@@ -237,18 +255,32 @@ function Projects() {
       formData.append("projectStatus", projectStatus);
       formData.append("budgetId", selectedBudgetId);
       if (documentFile) formData.append("document", documentFile);
-      if (coverFile) formData.append("coverFile", coverFile);
+      if (coverFile) {
+        formData.append("coverPhoto", coverFile);
+        console.log("Cover file attached:", coverFile.name, coverFile.type, coverFile.size);
+      }
       formData.append("userId", Number(auth.userId));
 
-      const headers = { Authorization: `Bearer ${auth.token}`, "Content-Type": "multipart/form-data" };
-      await axios.post(`${API_URL}/api/projects`, formData, { headers });
+      // Debug: Log FormData contents
+      console.log("FormData contents:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
 
+      const headers = { Authorization: `Bearer ${auth.token}`, "Content-Type": "multipart/form-data" };
+      const createResponse = await axios.post(`${API_URL}/api/projects`, formData, { headers });
+
+      console.log("Project created response:", createResponse.data);
+      console.log("Cover photo URL from response:", createResponse.data.coverPhotoUrl);
+
+      // Refetch projects to get the updated list with cover photos
       const projectsRes = await axios.get(`${API_URL}/api/projects`, {
         headers: { Authorization: `Bearer ${auth.token}` },
         params: { fiscalYear: selectedFiscalYear }
       });
       setProjects(projectsRes.data);
 
+      // Reset form
       setProjectName("");
       setDescription("");
       setAllocatedBudget("");
@@ -258,17 +290,20 @@ function Projects() {
       setDocumentPreview(null);
       setCoverFile(null);
       setCoverPreview(null);
+      setSelectedBudgetId(null);
       setErrors({});
 
+      // Refetch available budget
       const budgetRes = await axios.get(`${API_URL}/api/projects/budget/${selectedBudgetId}`, {
         headers: { Authorization: `Bearer ${auth.token}` }
       });
       setAvailableBudget(budgetRes.data.availableBudget);
 
-      alert("Project created successfully!");
+      setSuccessMessage("Project created successfully!");
+      setErrorMessage("");
 
     } catch (err) {
-      console.error(err);
+      console.error("Error creating project:", err);
       setErrors({ submit: err.response?.data?.error || "Failed to add project. Please try again." });
     } finally {
       setSubmitting(false);
@@ -323,13 +358,15 @@ function Projects() {
       }));
       setActivityErrors(prev => ({ ...prev, [projectId]: {} }));
 
-      alert("Activity added successfully! Budget totals updated.");
+      setSuccessMessage("Activity added successfully! Budget totals updated.");
+      setErrorMessage("");
 
     } catch (err) {
       console.error(err);
       const errorMsg = err.response?.data?.error || "Failed to add activity. Try again.";
       setActivityErrors(prev => ({ ...prev, [projectId]: { submit: errorMsg } }));
-      alert(errorMsg);
+      setErrorMessage(errorMsg);
+      setSuccessMessage("");
     }
   };
 
@@ -337,7 +374,7 @@ function Projects() {
     const content = feedbackInputMap[projectId] || "";
     const rating = ratingInputMap[projectId] || 0;
     if (!content.trim() || rating <= 0) {
-      alert("Please provide feedback and a rating");
+      setErrorMessage("Please provide feedback and a rating");
       return;
     }
 
@@ -357,10 +394,11 @@ function Projects() {
 
       setFeedbackInputMap(prev => ({ ...prev, [projectId]: "" }));
       setRatingInputMap(prev => ({ ...prev, [projectId]: 0 }));
-      alert("Feedback submitted successfully!");
+      setSuccessMessage("Feedback submitted successfully!");
+      setErrorMessage("");
     } catch (err) {
       console.error(err);
-      alert("Failed to submit feedback");
+      setErrorMessage("Failed to submit feedback");
     }
   };
 
@@ -371,9 +409,25 @@ function Projects() {
   };
 
   const getProjectCoverImage = (proj) => {
-    if (proj.coverPhotoUrl) return `${API_URL}${proj.coverPhotoUrl}`;
+    if (proj.coverPhotoUrl) {
+      // Handle both relative and absolute URLs
+      const url = proj.coverPhotoUrl.startsWith('http') 
+        ? proj.coverPhotoUrl 
+        : `${API_URL}${proj.coverPhotoUrl}`;
+      console.log("Cover photo URL:", url);
+      return url;
+    }
     return null;
   };
+
+  useEffect(() => {
+    if(!successMessage && !errorMessage) return;
+    const timer = setTimeout(() => {
+      setSuccessMessage("");
+      setErrorMessage("");
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [successMessage, errorMessage]);
 
   const StarRating = ({ value, onChange, maxStars = 5 }) => (
     <div className="flex gap-1">
@@ -394,6 +448,16 @@ function Projects() {
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h1 className="text-2xl md:text-4xl font-bold text-[#4B3A2F]">Projects</h1>
+        {successMessage && (
+          <div className="mb-4 p-3 rounded-lg bg-green-100 border border-green-300 text-green-800 text-sm">
+            {successMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div className="mb-4 p-3 rounded-lg bg-red-100 border border-red-300 text-red-800 text-sm">
+            {errorMessage}
+          </div>
+        )}
         <div className="flex gap-4 items-center">
           {currentFiscalYear && (
             <div className="px-4 py-2 bg-blue-100 rounded-lg border border-blue-300">
@@ -487,11 +551,18 @@ function Projects() {
             </select>
             {errors.projectType && <p className="text-red-500 text-xs mt-1">{errors.projectType}</p>}
 
-            {errors.submit && <p className="text-red-600 font-semibold mt-2">{errors.submit}</p>}
-
-            <label className="text-xs md:text-sm font-semibold text-gray-600">Upload Cover Image</label>
-            <input type="file" accept="image/*" onChange={handleCoverChange} className="p-2 border rounded w-full text-xs md:text-sm" required />
+            <label className="text-xs md:text-sm font-semibold text-gray-600">Upload Cover Image *</label>
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleCoverChange} 
+              className="p-2 border rounded w-full text-xs md:text-sm" 
+              required 
+            />
+            {errors.coverFile && <p className="text-red-500 text-xs mt-1">{errors.coverFile}</p>}
             {coverPreview && <img src={coverPreview} alt="Cover Preview" className="mt-2 max-h-48 rounded border" />}
+
+            {errors.submit && <p className="text-red-600 font-semibold mt-2">{errors.submit}</p>}
 
             <button type="submit" disabled={submitting} className="bg-[#FF6404] text-white p-2 md:p-3 rounded font-semibold hover:bg-[#e55a00] disabled:opacity-50 text-sm md:text-base">
               {submitting ? "Adding..." : "Add Project"}
@@ -521,7 +592,7 @@ function Projects() {
           <p className="text-gray-400 text-sm mt-2">Try selecting a different fiscal year or create a new project.</p>
         </div>
       ) : (
-        <div className="w-full max-w-4xl mx-auto">
+        <div className="w-full max-w-7xl mx-auto">
           <Swiper
             modules={[Navigation, Pagination, A11y]}
             spaceBetween={20}
@@ -530,7 +601,7 @@ function Projects() {
             pagination={{ clickable: true }}
             grabCursor={true}
             breakpoints={{
-              1024: { slidesPerView: 2 },
+              1024: { slidesPerView: 1 },
               768: { slidesPerView: 1 },
               640: { slidesPerView: 1 },
             }}
@@ -545,11 +616,16 @@ function Projects() {
                 <SwiperSlide key={proj.projectId} className="px-2">
                   <div className="bg-white p-4 md:p-6 rounded-2xl shadow h-full w-full">
                     {getProjectCoverImage(proj) ? (
-                      <div className="relative">
+                      <div className="relative rounded-t-xl overflow-hidden">
                         <img
                           src={getProjectCoverImage(proj)}
                           alt={proj.projectName}
-                          className="w-full h-44 md:h-56 object-cover"
+                          className="w-full h-full md:h-[600px] object-cover"
+                          onError={(e) => {
+                            console.error("Failed to load image:", proj.coverPhotoUrl);
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = '<div class="w-full h-full md:h-[600px] bg-gray-200 flex items-center justify-center text-gray-500 text-sm">Image failed to load</div>';
+                          }}
                         />
                         <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/60 to-transparent p-3">
                           <h3 className="text-white text-lg md:text-xl font-bold">
@@ -558,7 +634,7 @@ function Projects() {
                         </div>
                       </div>
                     ) : (
-                      <div className="w-full h-44 md:h-56 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
+                      <div className="w-full h-full md:h-[600px] bg-gray-200 flex items-center justify-center text-gray-500 text-sm rounded-t-xl">
                         No project image
                       </div>
                     )}
@@ -585,51 +661,112 @@ function Projects() {
                       </div>
                     </div>
 
-                    {auth.role === "ADMIN" && !isSuperAdmin && (
-                      <div className="mb-4 md:mb-6 border-t pt-4 md:pt-6">
-                        <h4 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Activities</h4>
-                        <div className="max-h-40 md:max-h-48 overflow-y-auto mb-3 md:mb-4 bg-gray-50 rounded p-3">
-                          {activities.length === 0 ? (
-                            <p className="text-gray-500 text-xs md:text-sm">No activities yet</p>
-                          ) : (
-                            activities.map(a => (
-                              <div key={a.activityId} className="border-b border-gray-200 py-2 last:border-b-0">
-                                <p className="font-semibold text-sm text-[#4B3A2F]">{a.activityName}</p>
-                                <p className="text-xs md:text-sm text-gray-600">{a.description}</p>
-                                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                  <span>{a.type}</span>
-                                  {a.type === "Expense" && <span>₱{Number(a.expenses).toLocaleString()}</span>}
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
+                    {(auth.role === "ADMIN" && !isSuperAdmin) || auth.role === "CITIZEN" ? (
+  <div className="mb-4 md:mb-6 border-t pt-4 md:pt-6">
+    <h4 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Activities</h4>
+    <div className="max-h-40 md:max-h-48 overflow-y-auto mb-3 md:mb-4 bg-gray-50 rounded p-3">
+      {activities.length === 0 ? (
+        <p className="text-gray-500 text-xs md:text-sm">No activities yet</p>
+      ) : (
+        activities.map(a => (
+          <div key={a.activityId} className="border-b border-gray-200 py-2 last:border-b-0">
+            <p className="font-semibold text-sm text-[#4B3A2F]">{a.activityName}</p>
+            <p className="text-xs md:text-sm text-gray-600">{a.description}</p>
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>{a.type}</span>
+              {a.type === "Expense" && <span>₱{Number(a.expenses).toLocaleString()}</span>}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
 
-                        <div className="bg-gray-50 p-3 md:p-4 rounded-lg space-y-2">
-                          <input type="text" placeholder="Activity Name" value={newActivityMap[proj.projectId]?.activityName || ""} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], activityName: e.target.value, type: prev[proj.projectId]?.type || "Report" } }))} className="p-2 border rounded w-full text-xs md:text-sm" />
-                          <textarea placeholder="Description" value={newActivityMap[proj.projectId]?.description || ""} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], description: e.target.value } }))} className="p-2 border rounded w-full text-xs md:text-sm resize-none" rows="2" />
-                          <div className="grid grid-cols-2 gap-2">
-                            <input type="date" value={newActivityMap[proj.projectId]?.date || new Date().toISOString().split('T')[0]} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], date: e.target.value } }))} className="p-2 border rounded text-xs md:text-sm" />
-                            <select value={newActivityMap[proj.projectId]?.type || "Report"} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], type: e.target.value } }))} className="p-2 border rounded text-xs md:text-sm">
-                              <option value="Report">Report</option>
-                              <option value="Expense">Expense</option>
-                            </select>
-                          </div>
-                          {newActivityMap[proj.projectId]?.type === "Expense" && (
-                            <input type="number" placeholder="Amount" value={newActivityMap[proj.projectId]?.expenses || 0} onChange={e => setNewActivityMap(prev => ({ ...prev, [proj.projectId]: { ...prev[proj.projectId], expenses: Number(e.target.value) } }))} className="p-2 border rounded w-full text-xs md:text-sm" />
-                          )}
-                          {activityErrors[proj.projectId]?.activityName && (
-                            <p className="text-red-500 text-xs mt-1">{activityErrors[proj.projectId].activityName}</p>
-                          )}
-                          {activityErrors[proj.projectId]?.submit && (
-                            <p className="text-red-600 font-semibold mt-2">{activityErrors[proj.projectId].submit}</p>
-                          )}
-                          <button onClick={() => handleAddActivity(proj.projectId)} className="bg-[#FF6404] text-white px-3 md:px-4 py-2 rounded font-semibold hover:bg-[#e55a00] text-xs md:text-sm w-full">
-                            Add Activity
-                          </button>
-                        </div>
-                      </div>
-                    )}
+    {auth.role === "ADMIN" && !isSuperAdmin && (
+      <div className="bg-gray-50 p-3 md:p-4 rounded-lg space-y-2">
+        <input
+          type="text"
+          placeholder="Activity Name"
+          value={newActivityMap[proj.projectId]?.activityName || ""}
+          onChange={e =>
+            setNewActivityMap(prev => ({
+              ...prev,
+              [proj.projectId]: {
+                ...prev[proj.projectId],
+                activityName: e.target.value,
+                type: prev[proj.projectId]?.type || "Report"
+              }
+            }))
+          }
+          className="p-2 border rounded w-full text-xs md:text-sm"
+        />
+        <textarea
+          placeholder="Description"
+          value={newActivityMap[proj.projectId]?.description || ""}
+          onChange={e =>
+            setNewActivityMap(prev => ({
+              ...prev,
+              [proj.projectId]: { ...prev[proj.projectId], description: e.target.value }
+            }))
+          }
+          className="p-2 border rounded w-full text-xs md:text-sm resize-none"
+          rows="2"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            value={newActivityMap[proj.projectId]?.date || new Date().toISOString().split('T')[0]}
+            onChange={e =>
+              setNewActivityMap(prev => ({
+                ...prev,
+                [proj.projectId]: { ...prev[proj.projectId], date: e.target.value }
+              }))
+            }
+            className="p-2 border rounded text-xs md:text-sm"
+          />
+          <select
+            value={newActivityMap[proj.projectId]?.type || "Report"}
+            onChange={e =>
+              setNewActivityMap(prev => ({
+                ...prev,
+                [proj.projectId]: { ...prev[proj.projectId], type: e.target.value }
+              }))
+            }
+            className="p-2 border rounded text-xs md:text-sm"
+          >
+            <option value="Report">Report</option>
+            <option value="Expense">Expense</option>
+          </select>
+        </div>
+        {newActivityMap[proj.projectId]?.type === "Expense" && (
+          <input
+            type="number"
+            placeholder="Amount"
+            value={newActivityMap[proj.projectId]?.expenses || 0}
+            onChange={e =>
+              setNewActivityMap(prev => ({
+                ...prev,
+                [proj.projectId]: { ...prev[proj.projectId], expenses: Number(e.target.value) }
+              }))
+            }
+            className="p-2 border rounded w-full text-xs md:text-sm"
+          />
+        )}
+        {activityErrors[proj.projectId]?.activityName && (
+          <p className="text-red-500 text-xs mt-1">{activityErrors[proj.projectId].activityName}</p>
+        )}
+        {activityErrors[proj.projectId]?.submit && (
+          <p className="text-red-600 font-semibold mt-2">{activityErrors[proj.projectId].submit}</p>
+        )}
+        <button
+          onClick={() => handleAddActivity(proj.projectId)}
+          className="bg-[#FF6404] text-white px-3 md:px-4 py-2 rounded font-semibold hover:bg-[#e55a00] text-xs md:text-sm w-full"
+        >
+          Add Activity
+        </button>
+      </div>
+    )}
+  </div>
+) : null}
 
                     <div className="border-t pt-4 md:pt-6">
                       <h4 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Community Feedback</h4>

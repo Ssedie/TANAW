@@ -20,7 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/activities")
-@RequiredArgsConstructor
+
 public class ApiActivityController {
 
     private final ActivityService activityService;
@@ -29,6 +29,12 @@ public class ApiActivityController {
     private final ActivityRepository activityRepository;
     private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 
+    public ApiActivityController(ActivityService activityService, ProjectRepository projectRepository, UserRepository userRepository, ActivityRepository activityRepository) {
+        this.activityService = activityService;
+        this.projectRepository = projectRepository;
+        this.userRepository = userRepository;
+        this.activityRepository = activityRepository;
+    }
     @GetMapping
     public ResponseEntity<List<Activity>> getAllActivities() {
         return ResponseEntity.ok(activityService.getAllActivities());

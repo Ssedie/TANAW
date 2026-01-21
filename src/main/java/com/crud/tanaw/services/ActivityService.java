@@ -13,12 +13,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+
 public class ActivityService {
 
     private final ActivityRepository activityRepository;
     private final ProjectRepository projectRepository;
     private final BudgetRepository budgetRepository;
+
+    public ActivityService(ActivityRepository activityRepository, ProjectRepository projectRepository, BudgetRepository budgetRepository) {
+        this.activityRepository = activityRepository;
+        this.projectRepository = projectRepository;
+        this.budgetRepository = budgetRepository;
+    }
 
     /**
      * Save or update an activity and recalculate budget expenses

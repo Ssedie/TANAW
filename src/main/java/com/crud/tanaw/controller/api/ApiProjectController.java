@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/projects")
-@RequiredArgsConstructor
+
 public class ApiProjectController {
 
     private final ProjectRepository projectRepository;
@@ -35,6 +35,14 @@ public class ApiProjectController {
     private final FeedbackRepository feedbackRepository;
     private final FileStorageService fileStorageService;
 
+    public ApiProjectController(ProjectRepository projectRepository, BudgetRepository budgetRepository, DocumentRepository documentRepository, UserRepository userRepository, FeedbackRepository feedbackRepository, FileStorageService fileStorageService) {
+        this.projectRepository = projectRepository;
+        this.budgetRepository = budgetRepository;
+        this.documentRepository = documentRepository;
+        this.userRepository = userRepository;
+        this.feedbackRepository = feedbackRepository;
+        this.fileStorageService = fileStorageService;
+    }
     /**
      * Get current fiscal year
      */

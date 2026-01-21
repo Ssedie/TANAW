@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/dashboard")
-@RequiredArgsConstructor
+
 public class ApiDashboardController {
 
     private final DashboardService dashboardService;
@@ -23,6 +23,12 @@ public class ApiDashboardController {
     private final BudgetRepository budgetRepository;
     private final ActivityRepository activityRepository;
 
+    public ApiDashboardController(DashboardService dashboardService, ProjectRepository projectRepository, BudgetRepository budgetRepository, ActivityRepository activityRepository) {
+        this.dashboardService = dashboardService;
+        this.projectRepository = projectRepository;
+        this.budgetRepository = budgetRepository;
+        this.activityRepository = activityRepository;
+    }
     /**
      * Get current fiscal year
      */

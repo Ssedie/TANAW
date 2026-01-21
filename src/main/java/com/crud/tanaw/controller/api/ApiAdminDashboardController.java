@@ -13,12 +13,16 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
-@RequiredArgsConstructor
+
 public class ApiAdminDashboardController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    public ApiAdminDashboardController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
     // Only super admin can get all users
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers(Authentication auth) {
